@@ -124,7 +124,7 @@ export class UserService {
 
 ## Configuration
 
-### GCP KMS (Recommended for Production)
+### GCP KMS (Example: Production Setup)
 
 **Environment Variables:**
 ```bash
@@ -148,6 +148,24 @@ pnpm example
 ```
 
 **Validation:** Module startup throws `InternalServerErrorException` if credentials are not found or lack `roles/cloudkms.cryptographer` permission.
+
+### Local Setup (Development Only)
+
+**No Configuration Required:**
+```typescript
+import { CipherModule, Providers } from 'nestjs-cipher';
+
+@Module({
+  imports: [
+    CipherModule.forRoot({
+      provider: Providers.LOCAL,
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Local provider stores encryption keys in-memory only. Keys are lost on application restart. **Not suitable for production.**
 
 ## How It Works
 
