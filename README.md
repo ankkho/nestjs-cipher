@@ -184,6 +184,18 @@ Decrypt reverses: unwrap DEK → decrypt → zero DEK
 - DEK never touches disk; only wrapped DEK stored
 - **⚠️ At least one of `tenantId` or `userId` is required**
 
+**What Gets Stored:**
+The entire encrypted payload is persisted in your database column:
+```json
+{
+  "v": 1,
+  "ciphertext": "NjZAULM5O+AIqTpvwFSuQQ==",
+  "wrappedDek": "gJj45odWOqMLG/zne650kkH1a2PUBRgI5tB7SLZSLlY=",
+  "iv": "TnAtxKkN+i2wnh2cukdE9Q==",
+  "tag": "fqE4Z+mCW9D6oiWfNnxiJQ=="
+}
+```
+
 ## Multi-Tenant Architecture
 
 `nestjs-cipher` uses **envelope encryption** to achieve secure, cost-effective multi-tenant data isolation.
