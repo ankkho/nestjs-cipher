@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest';
-import {LocalProvider} from './local';
+import { describe, expect, it } from 'vitest';
+import { LocalProvider } from './local';
 
 describe('LocalProvider', () => {
   it('should wrap and unwrap DEK without modification', async () => {

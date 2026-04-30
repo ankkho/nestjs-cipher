@@ -1,4 +1,4 @@
-import type { IKeyProvider } from './interface';
+import type {IKeyProvider} from './interface';
 
 /**
  * Local provider: no external key wrapping.
