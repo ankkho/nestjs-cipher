@@ -92,4 +92,8 @@ export class ProvidersService implements OnModuleInit {
 
     return this.providerInstance;
   }
+
+  getProviderType(): string {
+    return this.provider;
+  }
 }

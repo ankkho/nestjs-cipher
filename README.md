@@ -11,6 +11,7 @@ Production-grade NestJS encryption module for PII protection using AES-256-GCM l
 - [How It Works](#how-it-works)
 - [API Reference](#api-reference)
 - [Multi-Tenant Architecture](#multi-tenant-architecture)
+- [Observability](#observability)
 - [Security Best Practices](#security-best-practices)
 - [Testing with Example](#testing-with-example)
 - [Troubleshooting](#troubleshooting)
@@ -24,7 +25,7 @@ Production-grade NestJS encryption module for PII protection using AES-256-GCM l
 - **Multi-Tenant:** Automatic tenant/user-level key isolation
 - **Typed:** Full TypeScript support with strict types
 - **Fast:** ~10-20ms per operation (local crypto + KMS round-trip)
-- **Observable:** Structured logging + health checks
+- **Observable:** Structured logging (Pino) + OpenTelemetry traces on encrypt/decrypt + health checks
 - **Tested:** 13 comprehensive unit tests, production CI/CD
 
 ## Installation
@@ -182,6 +183,42 @@ All resources within a tenant (users, emails, documents, etc.) share a **single 
 **Example: Org with 1000 Users**
 - ❌ Without envelope encryption: 1000 KMS calls per operation = expensive
 - ✅ With envelope encryption: 1 KMS call per operation = cost-effective at scale
+
+## Observability
+
+`nestjs-cipher` instruments `encrypt` and `decrypt` with [OpenTelemetry](https://opentelemetry.io/) spans. When an OTel SDK is configured in your application, traces are emitted automatically — no additional configuration needed in this module.
+
+### Span Names
+
+| Operation | Span Name |
+| --- | --- |
+| Encrypt | `nestjs-cipher.encrypt` |
+| Decrypt | `nestjs-cipher.decrypt` |
+
+### Span Attributes
+
+| Attribute | Example value | Description |
+| --- | --- | --- |
+| `cipher.provider` | `GCP_KMS` | Active provider |
+| `cipher.context.type` | `tenant` or `user` | Isolation level |
+| `cipher.payload.version` | `1` | Payload version (decrypt only) |
+
+Span status is set to `ERROR` with the error message on failure, and `OK` on success.
+
+### Setup (NestJS + OpenTelemetry SDK)
+
+```typescript
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+
+const sdk = new NodeSDK({
+  traceExporter: new OTLPTraceExporter({ url: 'http://localhost:4318/v1/traces' }),
+});
+
+sdk.start();
+```
+
+If no SDK is configured, `@opentelemetry/api` operates as a no-op — zero performance overhead.
 
 ## Security Best Practices
 

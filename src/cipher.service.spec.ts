@@ -21,6 +21,7 @@ describe('CipherService', () => {
 
     const mockProvidersService = {
       getProvider: () => mockProvider,
+      getProviderType: () => 'LOCAL',
     } as any;
 
     service = new CipherService(mockProvidersService);
