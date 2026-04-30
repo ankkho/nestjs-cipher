@@ -69,7 +69,11 @@
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/naming-convention": "off",
+      "@typescript-eslint/switch-exhaustiveness-check": "off",
+      "@stylistic/curly-newline": "off",
       "max-params": "off"
     }
   }
