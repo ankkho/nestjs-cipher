@@ -1,15 +1,15 @@
-import { KeyManagementServiceClient } from '@google-cloud/kms';
+import {KeyManagementServiceClient} from '@google-cloud/kms';
 import {
   Inject,
   Injectable,
   InternalServerErrorException,
   OnModuleInit,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PinoLogger } from 'nestjs-pino';
-import { CIPHER_OPTIONS, CipherOptions, Providers } from './interface';
-import { GcpKmsProvider } from './providers/gcp.kms';
-import { IKeyProvider } from './providers/interface';
+import {ConfigService} from '@nestjs/config';
+import {PinoLogger} from 'nestjs-pino';
+import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
+import {GcpKmsProvider} from './providers/gcp.kms';
+import {IKeyProvider} from './providers/interface';
 
 /**
  * ProvidersService
@@ -36,7 +36,7 @@ export class ProvidersService implements OnModuleInit {
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(ProvidersService.name);
-    this.logger.assign({ provider: options.provider });
+    this.logger.assign({provider: options.provider});
     this.provider = this.options.provider;
   }
 
@@ -44,11 +44,11 @@ export class ProvidersService implements OnModuleInit {
     try {
       await this.initProvider();
       this.logger.info(
-        { provider: this.provider },
+        {provider: this.provider},
         'KMS Provider initialized successfully',
       );
     } catch (error) {
-      this.logger.error({ error }, 'Failed to initialize GCP KMS Provider');
+      this.logger.error({error}, 'Failed to initialize GCP KMS Provider');
       throw new InternalServerErrorException(
         'Cryptographic Provider Initialization Failed',
       );
