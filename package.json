@@ -1,7 +1,7 @@
 {
   "name": "nestjs-cipher",
   "version": "1.0.0",
-  "description": "NestJS dynamic encryption module with envelope encryption (AES-256-GCM) and KMS key wrapping",
+  "description": "Production-grade NestJS encryption module for PII protection with AES-256-GCM and GCP KMS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
