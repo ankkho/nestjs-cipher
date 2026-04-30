@@ -1,4 +1,4 @@
-# @eventing/cipher-module
+# nestjs-cipher
 
 Production-grade NestJS encryption module for PII protection using AES-256-GCM locally with optional GCP Cloud KMS key wrapping.
 
@@ -17,7 +17,7 @@ Production-grade NestJS encryption module for PII protection using AES-256-GCM l
 ### Install
 
 ```bash
-pnpm install @eventing/cipher-module
+pnpm installnestjs-cipher
 ```
 
 ### Register Module
