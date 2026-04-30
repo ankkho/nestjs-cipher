@@ -9,6 +9,7 @@ import {ConfigService} from '@nestjs/config';
 import {PinoLogger} from 'nestjs-pino';
 import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
 import {GcpKmsProvider} from './providers/gcp.kms';
+import {LocalProvider} from './providers/local';
 import {IKeyProvider} from './providers/interface';
 
 /**
@@ -57,6 +58,11 @@ export class ProvidersService implements OnModuleInit {
 
   async initProvider() {
     switch (this.provider) {
+      case Providers.LOCAL: {
+        this.providerInstance = new LocalProvider();
+        break;
+      }
+
       case Providers.GCP_KMS: {
         this.gcpClient = new KeyManagementServiceClient({
           keyFilename: this.config.get<string>('GCP_KMS_CREDENTIALS_PATH')!,
