@@ -23,7 +23,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/). Scope is op
 ```
 feat(kms): add retry backoff
 fix: handle edge case in decryption
-docs: update README examples
+docs: update README example
 refactor: simplify provider initialization
 test: add health indicator tests
 chore(deps): bump typescript

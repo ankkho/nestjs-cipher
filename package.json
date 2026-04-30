@@ -1,7 +1,7 @@
 {
   "name": "nestjs-cipher",
   "version": "1.0.0",
-  "description": "NestJS dynamic encryption module with envelope encryption (AES-256-GCM) and KMS key wrapping",
+  "description": "Production-grade NestJS encryption module for PII protection with AES-256-GCM and GCP KMS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,8 +9,10 @@
   ],
   "scripts": {
     "build": "tsc",
-    "lint": "xo",
-    "lint:fix": "xo --fix",
+    "build:example": "rm -rf example/dist && tsc --project example/tsconfig.json",
+    "example": "nest start --watch example/main.ts",
+    "lint": "xo --ignore=example",
+    "lint:fix": "xo --fix --ignore=example",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "prepare": "husky install",
@@ -21,12 +23,37 @@
     "encryption",
     "aes-gcm",
     "kms",
-    "gcp"
+    "gcp",
+    "aws",
+    "azure",
+    "pii",
+    "data-protection",
+    "security",
+    "compliance",
+    "privacy",
+    "gdpr",
+    "hipaa",
+    "ccpa",
+    "nist",
+    "cryptography"
   ],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=24.15.0"
+  },
   "packageManager": "pnpm@10.32.0",
   "dependencies": {
+    "@google-cloud/kms": "^5.3.0",
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.19",
+    "@nestjs/terminus": "^11.1.1",
+    "nestjs-pino": "^4.1.0",
+    "pino": "^9.5.0",
+    "reflect-metadata": "^0.2.2"
+  },
+  "peerDependencies": {
     "@google-cloud/kms": "^5.3.0",
     "@nestjs/common": "^11.1.19",
     "@nestjs/config": "^4.0.4",
@@ -40,6 +67,7 @@
     "@changesets/cli": "^2.27.1",
     "@commitlint/cli": "^19.6.0",
     "@commitlint/config-conventional": "^19.6.0",
+    "@nestjs/cli": "^11.0.21",
     "@types/node": "^25.6.0",
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
@@ -50,6 +78,8 @@
     "eslint-plugin-unicorn": "^63.0.0",
     "husky": "^9.1.7",
     "prettier": "^3.8.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.17.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0",
     "xo": "^2.0.2"
@@ -57,6 +87,11 @@
   "xo": {
     "space": true,
     "prettier": true,
+    "ignores": [
+      "dist",
+      "node_modules",
+      "example"
+    ],
     "rules": {
       "import/extensions": "off",
       "import-x/extensions": "off",

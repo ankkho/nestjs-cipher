@@ -1,5 +1,5 @@
 import {type KeyManagementServiceClient} from '@google-cloud/kms';
-import {type CipherOptions} from '../interface';
+import {type CipherOptions, type Providers} from '../interface';
 import {type IKeyProvider} from './interface';
 
 const MAX_RETRIES = 3;
@@ -26,11 +26,16 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
 
 /** GCP KMS provider implementation for key wrapping/unwrapping */
 export class GcpKmsProvider implements IKeyProvider {
+  private readonly gcp: Extract<
+    CipherOptions,
+    {provider: Providers.GCP_KMS}
+  >['gcp'];
+
   constructor(
-    private readonly options: CipherOptions,
+    options: Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
     private readonly client: KeyManagementServiceClient,
   ) {
-    // Gcp is guaranteed non-null by the discriminated union in CipherOptions
+    this.gcp = options.gcp;
   }
 
   async wrap(dek: Buffer, keyPath: string): Promise<Buffer> {
@@ -48,7 +53,7 @@ export class GcpKmsProvider implements IKeyProvider {
   }
 
   generateKeyPath(keyAlias: string): string {
-    const {projectId, location, keyRing} = this.options.gcp;
+    const {projectId, location, keyRing} = this.gcp;
     return `projects/${projectId}/locations/${location}/keyRings/${keyRing}/cryptoKeys/${keyAlias}`;
   }
 }
