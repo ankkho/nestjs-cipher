@@ -4,6 +4,9 @@ import {
   Module,
   ModuleMetadata,
 } from '@nestjs/common';
+import {ConfigModule} from '@nestjs/config';
+import {TerminusModule} from '@nestjs/terminus';
+import {LoggerModule} from 'nestjs-pino';
 import {CipherHealthIndicator} from './cipher.health';
 import {CipherService} from './cipher.service';
 import {CIPHER_OPTIONS, CipherOptions} from './interface';
@@ -22,10 +25,11 @@ const CIPHER_PROVIDERS = [
 
 /** Dynamic encryption module with configurable cryptographic provider (GCP KMS, etc.) */
 @Module({})
-export class CipherModuleModule {
+export class CipherModule {
   static forRoot(options: CipherOptions): DynamicModule {
     return {
-      module: CipherModuleModule,
+      module: CipherModule,
+      imports: [ConfigModule, TerminusModule, LoggerModule.forRoot()],
       providers: [
         {provide: CIPHER_OPTIONS, useValue: options},
         ...CIPHER_PROVIDERS,
@@ -36,10 +40,15 @@ export class CipherModuleModule {
 
   static forRootAsync(options: CipherOptionsAsync): DynamicModule {
     return {
-      module: CipherModuleModule,
-      imports: options.imports ?? [],
+      module: CipherModule,
+      imports: [
+        ConfigModule,
+        TerminusModule,
+        LoggerModule.forRoot(),
+        ...(options.imports ?? []),
+      ],
       providers: [
-        CipherModuleModule.buildOptionsProvider(options),
+        CipherModule.buildOptionsProvider(options),
         ...CIPHER_PROVIDERS,
       ],
       exports: [CIPHER_OPTIONS, ...CIPHER_PROVIDERS],

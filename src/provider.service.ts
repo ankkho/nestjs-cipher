@@ -10,6 +10,7 @@ import {PinoLogger} from 'nestjs-pino';
 import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
 import {GcpKmsProvider} from './providers/gcp.kms';
 import {IKeyProvider} from './providers/interface';
+import {LocalProvider} from './providers/local';
 
 /**
  * ProvidersService
@@ -35,20 +36,27 @@ export class ProvidersService implements OnModuleInit {
     private readonly config: ConfigService,
     private readonly logger: PinoLogger,
   ) {
-    this.logger.setContext(ProvidersService.name);
-    this.logger.assign({provider: options.provider});
+    if (this.logger) {
+      this.logger.setContext(ProvidersService.name);
+    }
+
     this.provider = this.options.provider;
   }
 
   async onModuleInit() {
     try {
       await this.initProvider();
-      this.logger.info(
-        {provider: this.provider},
-        'KMS Provider initialized successfully',
-      );
+      if (this.logger) {
+        this.logger.info(
+          {provider: this.provider},
+          'KMS Provider initialized successfully',
+        );
+      }
     } catch (error) {
-      this.logger.error({error}, 'Failed to initialize GCP KMS Provider');
+      if (this.logger) {
+        this.logger.error({error}, 'Failed to initialize GCP KMS Provider');
+      }
+
       throw new InternalServerErrorException(
         'Cryptographic Provider Initialization Failed',
       );
@@ -57,6 +65,11 @@ export class ProvidersService implements OnModuleInit {
 
   async initProvider() {
     switch (this.provider) {
+      case Providers.LOCAL: {
+        this.providerInstance = new LocalProvider();
+        break;
+      }
+
       case Providers.GCP_KMS: {
         this.gcpClient = new KeyManagementServiceClient({
           keyFilename: this.config.get<string>('GCP_KMS_CREDENTIALS_PATH')!,
@@ -64,7 +77,7 @@ export class ProvidersService implements OnModuleInit {
         // Verify credentials are valid at startup — fail fast before any request
         await this.gcpClient.getProjectId();
         this.providerInstance = new GcpKmsProvider(
-          this.options,
+          this.options as Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
           this.gcpClient,
         );
         break;

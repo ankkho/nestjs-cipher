@@ -1,0 +1,8 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "example",
+  "entryFile": "main",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}

@@ -23,11 +23,11 @@ pnpm installnestjs-cipher
 ### Register Module
 
 ```typescript
-import { CipherModuleModule, Providers } from '@eventing/cipher-module';
+import { CipherModule, Providers } from '@eventing/cipher-module';
 
 @Module({
   imports: [
-    CipherModuleModule.forRoot({
+    CipherModule.forRoot({
       provider: Providers.GCP_KMS,
       gcp: {
         projectId: process.env.GCP_KMS_PROJECT_ID!,
@@ -65,6 +65,53 @@ export class UserService {
     return { ...stored, email };
   }
 }
+```
+
+## Testing with cURL
+
+### Start the example server
+
+```bash
+pnpm example:dev
+```
+
+### POST - Encrypt Data
+
+```bash
+curl -X POST http://localhost:3000/pii/encrypt \
+  -H "Content-Type: application/json" \
+  -d '{"data":"user@example.com","tenantId":"org-123"}'
+```
+
+**Response:**
+```json
+{
+  "encrypted": "{\"v\":1,\"ciphertext\":\"i0nlicuMdPiemZ8B+IrG4w==\",\"wrappedDek\":\"AAAA...\",\"iv\":\"9jR1YiR6nOO0aUd9fyf9\",\"tag\":\"...\"}"
+}
+```
+
+### GET - Decrypt Data
+
+```bash
+# Option 1: Using captured encrypted value from POST
+ENCRYPTED=$(curl -s -X POST http://localhost:3000/pii/encrypt \
+  -H "Content-Type: application/json" \
+  -d '{"data":"user@example.com","tenantId":"org-123"}' | jq -r '.encrypted')
+
+curl -X GET "http://localhost:3000/pii/decrypt?encryptedJson=$ENCRYPTED&tenantId=org-123"
+```
+
+**Response:**
+```json
+{
+  "decrypted": "user@example.com"
+}
+```
+
+### Quick Test (inline)
+
+```bash
+curl -X GET 'http://localhost:3000/pii/decrypt?encryptedJson=%7B%22v%22%3A1%2C%22ciphertext%22%3A%22test%22%2C%22wrappedDek%22%3A%22test%22%2C%22iv%22%3A%22test%22%2C%22tag%22%3A%22test%22%7D&tenantId=org-123'
 ```
 
 ## How It Works

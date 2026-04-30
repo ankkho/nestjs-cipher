@@ -1,8 +1,8 @@
 import {describe, expect, it} from 'vitest';
-import {CipherModuleModule} from './cipher-module.module';
+import {CipherModule} from './cipher-module.module';
 
-describe('CipherModuleModule', () => {
+describe('CipherModule', () => {
   it('should be defined', () => {
-    expect(CipherModuleModule).toBeDefined();
+    expect(CipherModule).toBeDefined();
   });
 });
