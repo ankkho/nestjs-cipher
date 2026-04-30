@@ -1,5 +1,6 @@
 import {createCipheriv, createDecipheriv, randomBytes} from 'node:crypto';
 import {Injectable} from '@nestjs/common';
+import {SpanStatusCode, trace} from '@opentelemetry/api';
 import {Context, EncryptedPayload} from './interface';
 import {ProvidersService} from './provider.service';
 import {buildKeyAlias} from './utils';
@@ -8,6 +9,8 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const TAG_LENGTH = 16;
 const CURRENT_PAYLOAD_VERSION = 1;
+
+const tracer = trace.getTracer('nestjs-cipher');
 
 @Injectable()
 export class CipherService {
@@ -24,38 +27,54 @@ export class CipherService {
     plaintext: string,
     context: Context,
   ): Promise<EncryptedPayload> {
-    // Generate random DEK (32 bytes for AES-256)
-    const dek = randomBytes(32);
+    const span = tracer.startSpan('nestjs-cipher.encrypt', {
+      attributes: {
+        'cipher.provider': this.providersService.getProviderType(),
+        'cipher.context.type': context.tenantId ? 'tenant' : 'user',
+      },
+    });
 
-    // Generate random IV
-    const iv = randomBytes(IV_LENGTH);
+    try {
+      // Generate random DEK (32 bytes for AES-256)
+      const dek = randomBytes(32);
 
-    // Get KMS provider and wrap DEK
-    const provider = this.providersService.getProvider();
-    const keyAlias = buildKeyAlias(context);
-    const keyPath = provider.generateKeyPath(keyAlias);
+      // Generate random IV
+      const iv = randomBytes(IV_LENGTH);
 
-    const wrappedDek = await provider.wrap(dek, keyPath);
+      // Get KMS provider and wrap DEK
+      const provider = this.providersService.getProvider();
+      const keyAlias = buildKeyAlias(context);
+      const keyPath = provider.generateKeyPath(keyAlias);
 
-    // Encrypt plaintext with DEK
-    const cipher = createCipheriv(ALGORITHM, dek, iv);
-    const ciphertext = Buffer.concat([
-      cipher.update(plaintext, 'utf8'),
-      cipher.final(),
-    ]);
-    const tag = cipher.getAuthTag();
+      const wrappedDek = await provider.wrap(dek, keyPath);
 
-    // Zero out DEK from memory
-    dek.fill(0);
+      // Encrypt plaintext with DEK
+      const cipher = createCipheriv(ALGORITHM, dek, iv);
+      const ciphertext = Buffer.concat([
+        cipher.update(plaintext, 'utf8'),
+        cipher.final(),
+      ]);
+      const tag = cipher.getAuthTag();
 
-    // Encode to base64 for JSON serialization
-    return {
-      v: CURRENT_PAYLOAD_VERSION,
-      ciphertext: ciphertext.toString('base64'),
-      wrappedDek: wrappedDek.toString('base64'),
-      iv: iv.toString('base64'),
-      tag: tag.toString('base64'),
-    };
+      // Zero out DEK from memory
+      dek.fill(0);
+
+      span.setStatus({code: SpanStatusCode.OK});
+
+      // Encode to base64 for JSON serialization
+      return {
+        v: CURRENT_PAYLOAD_VERSION,
+        ciphertext: ciphertext.toString('base64'),
+        wrappedDek: wrappedDek.toString('base64'),
+        iv: iv.toString('base64'),
+        tag: tag.toString('base64'),
+      };
+    } catch (error) {
+      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
+      throw error;
+    } finally {
+      span.end();
+    }
   }
 
   /**
@@ -66,15 +85,36 @@ export class CipherService {
    * 4. Decrypt ciphertext with DEK
    */
   async decrypt(payload: EncryptedPayload, context: Context): Promise<string> {
-    // Route to version-specific handler
-    switch (payload.v) {
-      case 1: {
-        return this.decryptV1(payload, context);
+    const span = tracer.startSpan('nestjs-cipher.decrypt', {
+      attributes: {
+        'cipher.provider': this.providersService.getProviderType(),
+        'cipher.context.type': context.tenantId ? 'tenant' : 'user',
+        'cipher.payload.version': payload.v,
+      },
+    });
+
+    try {
+      let result: string;
+
+      // Route to version-specific handler
+      switch (payload.v) {
+        case 1: {
+          result = await this.decryptV1(payload, context);
+          break;
+        }
+
+        default: {
+          throw new Error(`Unsupported payload version: ${payload.v}`);
+        }
       }
 
-      default: {
-        throw new Error(`Unsupported payload version: ${payload.v}`);
-      }
+      span.setStatus({code: SpanStatusCode.OK});
+      return result;
+    } catch (error) {
+      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
+      throw error;
+    } finally {
+      span.end();
     }
   }
 
