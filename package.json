@@ -4,7 +4,9 @@
   "description": "NestJS dynamic encryption module with envelope encryption (AES-256-GCM) and KMS key wrapping",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "lint": "xo",

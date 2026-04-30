@@ -1,6 +1,19 @@
 {
-  "extends": ["@commitlint/config-conventional"],
+  "extends": [
+    "@commitlint/config-conventional"
+  ],
   "rules": {
-    "scope-enum": [2, "always", ["kms", "health", "module", "types", "deps", "docs"]]
+    "scope-enum": [
+      2,
+      "always",
+      [
+        "kms",
+        "health",
+        "module",
+        "types",
+        "deps",
+        "docs"
+      ]
+    ]
   }
 }
