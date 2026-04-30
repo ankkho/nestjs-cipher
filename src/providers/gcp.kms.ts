@@ -1,4 +1,7 @@
-import {type KeyManagementServiceClient} from '@google-cloud/kms';
+import {
+  KeyManagementServiceClient as KmsClient,
+  type KeyManagementServiceClient,
+} from '@google-cloud/kms';
 import {type CipherOptions, type Providers} from '../interface';
 import {type IKeyProvider} from './interface';
 
@@ -26,6 +29,26 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
 
 /** GCP KMS provider implementation for key wrapping/unwrapping */
 export class GcpKmsProvider implements IKeyProvider {
+  /**
+   * Factory method: initializes GCP KMS client with ADC and validates credentials
+   * @throws On credential initialization or validation failure
+   */
+  static async create(
+    options: Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
+  ): Promise<GcpKmsProvider> {
+    // Initialize client with Application Default Credentials (ADC)
+    // ADC automatically detects credentials from:
+    // - GOOGLE_APPLICATION_CREDENTIALS env var
+    // - Google Cloud SDK installation
+    // - GCP runtime environments (Cloud Run, GKE, Compute Engine)
+    const client = new KmsClient();
+
+    // Verify credentials are valid at startup — fail fast before any request
+    await client.getProjectId();
+
+    return new GcpKmsProvider(options, client);
+  }
+
   private readonly gcp: Extract<
     CipherOptions,
     {provider: Providers.GCP_KMS}

@@ -89,7 +89,7 @@ export class UserService {
 
 ## Configuration
 
-Set environment variables:
+### GCP KMS Environment Variables
 
 ```bash
 # Required
@@ -98,10 +98,28 @@ GCP_KMS_KEY_RING=pii-ring
 
 # Optional (defaults to europe-west3)
 GCP_KMS_LOCATION=us-central1
-GCP_KMS_CREDENTIALS_PATH=/path/to/key.json
 ```
 
-**Validation:** All required fields are verified at module startup — fails fast on misconfiguration.
+### Authentication
+
+`nestjs-cipher` uses [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials) for automatic service account detection. Choose **one** of:
+
+**Option 1: Local development with service account key**
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+pnpm example
+```
+
+**Option 2: Use Google Cloud SDK credentials**
+```bash
+gcloud auth application-default login
+pnpm example
+```
+
+**Option 3: Runtime environments (Cloud Run, GKE, Compute Engine)**
+Credentials are automatically available from the runtime service account — no configuration needed.
+
+**Validation:** Credentials are verified at module startup — throws `InternalServerErrorException` if not found or invalid.
 
 ## How It Works
 

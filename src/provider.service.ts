@@ -1,11 +1,9 @@
-import {KeyManagementServiceClient} from '@google-cloud/kms';
 import {
   Inject,
   Injectable,
   InternalServerErrorException,
   OnModuleInit,
 } from '@nestjs/common';
-import {ConfigService} from '@nestjs/config';
 import {PinoLogger} from 'nestjs-pino';
 import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
 import {GcpKmsProvider} from './providers/gcp.kms';
@@ -18,22 +16,20 @@ import {LocalProvider} from './providers/local';
  * This NestJS service abstracts cryptographic provider initialization and access.
  * Currently supports Google Cloud KMS (GCP_KMS) as a backend for encryption key management.
  *
- * - On module init, initializes the provider client (e.g., GCP KMS) using credentials from config.
- * - Provides a method to retrieve the initialized provider client for cryptographic operations.
+ * - On module init, initializes the provider (e.g., GCP KMS) using credentials from environment.
+ * - Provides a method to retrieve the initialized provider for cryptographic operations.
  * - Throws InternalServerErrorException if the provider is not supported or initialization fails.
  *
  * Usage:
- *   Inject ProvidersService and call getClient() to access the KMS client.
+ *   Inject ProvidersService and call getProvider() to access the KMS provider.
  */
 @Injectable()
 export class ProvidersService implements OnModuleInit {
-  private gcpClient!: KeyManagementServiceClient;
   private readonly provider!: Providers;
   private providerInstance!: IKeyProvider;
 
   constructor(
     @Inject(CIPHER_OPTIONS) private readonly options: CipherOptions,
-    private readonly config: ConfigService,
     private readonly logger: PinoLogger,
   ) {
     if (this.logger) {
@@ -54,7 +50,7 @@ export class ProvidersService implements OnModuleInit {
       }
     } catch (error) {
       if (this.logger) {
-        this.logger.error({error}, 'Failed to initialize GCP KMS Provider');
+        this.logger.error({error}, 'Failed to initialize KMS Provider');
       }
 
       throw new InternalServerErrorException(
@@ -71,14 +67,8 @@ export class ProvidersService implements OnModuleInit {
       }
 
       case Providers.GCP_KMS: {
-        this.gcpClient = new KeyManagementServiceClient({
-          keyFilename: this.config.get<string>('GCP_KMS_CREDENTIALS_PATH')!,
-        });
-        // Verify credentials are valid at startup — fail fast before any request
-        await this.gcpClient.getProjectId();
-        this.providerInstance = new GcpKmsProvider(
+        this.providerInstance = await GcpKmsProvider.create(
           this.options as Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
-          this.gcpClient,
         );
         break;
       }
