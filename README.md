@@ -26,35 +26,25 @@
 
 ## Features
 
-- **Envelope Encryption:** Local AES-256-GCM with optional KMS integration (GCP Cloud KMS)
-- **Zero-Trust DEK Handling:** Data Encryption Keys zeroed from memory immediately after use
-- **Multi-Tenant Ready:** Automatic tenant/user-level key isolation; no cross-tenant data leakage
-- **Production-Grade:** Full TypeScript, comprehensive error handling, structured logging (Pino), OpenTelemetry instrumentation
-- **High Performance:** ~10-20ms per operation; 90% local crypto, minimal KMS round-trips
-- **Battle-Tested:** 13 comprehensive unit tests; CI/CD validated; used in production
+- **Envelope Encryption:** AES-256-GCM local encryption with optional KMS key wrapping
+- **Zero-Trust DEK:** Data Encryption Keys zeroed from memory after each operation
+- **Multi-Tenant:** Automatic tenant/user-level key isolation
+- **Fast:** ~10-20ms per operation (90% local, minimal KMS calls)
+- **Observable:** Pino logging + OpenTelemetry instrumentation
+- **Production-Ready:** Full TypeScript, 13 unit tests, CI/CD validated
 
 ## Providers
 
-`nestjs-cipher` supports multiple **KMS (Key Management Service)** providers for key wrapping:
+`nestjs-cipher` supports multiple KMS providers. Choose based on your deployment environment:
 
-| Provider | Best For | Setup | Cost | Key Rotation | Audit |
-| --- | --- | --- | --- | --- | --- |
-| **LOCAL** | Development, testing | ✅ None | Free | Manual | Built-in logs |
-| **GCP_KMS** | Production, compliance | 🔧 Medium | Pay-per-op | Auto (90d) | Cloud Audit Logs |
+| Provider | Use Case | Setup | Key Rotation | Compliance |
+| --- | --- | --- | --- | --- |
+| **LOCAL** | Development & testing | None | Manual | None |
+| **GCP_KMS** | Production (recommended) | Medium | Auto (90d) | SOC 2, ISO 27001, PCI-DSS |
 
-**Local Provider** — Development/Staging Only
-- ✅ Zero external dependencies; instant setup
-- ✅ Fast local AES-256-GCM encryption
-- ✅ Perfect for dev, testing, CI/CD
-- ⚠️ Keys stored in-memory only; no persistence
-- ⚠️ No key rotation, key escrow, or audit trail
+**LOCAL** — In-memory keys; no persistence. Dev and CI/CD only.
 
-**GCP KMS Provider** — Production-Ready
-- ✅ Enterprise-grade key management service
-- ✅ Automatic key rotation (90 days default); CMEK support
-- ✅ Full Cloud Audit Logs + compliance (SOC 2, ISO 27001, PCI-DSS)
-- ✅ Multi-region key replication; disaster recovery
-- ⚠️ Requires GCP account + IAM service account setup
+**GCP_KMS** — Enterprise-grade key management with audit logging, auto-rotation, and multi-region support.
 
 ## Installation
 
@@ -132,53 +122,30 @@ export class UserService {
 
 ## Configuration
 
-### GCP KMS Environment Variables
+### GCP KMS (Recommended for Production)
 
+**Environment Variables:**
 ```bash
-# Required
 GCP_KMS_PROJECT_ID=my-project
 GCP_KMS_KEY_RING=pii-ring
-
-# Optional (defaults to europe-west3)
-GCP_KMS_LOCATION=us-central1
+GCP_KMS_LOCATION=europe-west3  # Optional; defaults to europe-west3
 ```
 
-### Authentication
+**Authentication:**
+`nestjs-cipher` uses [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials). ADC searches for credentials in order:
 
-`nestjs-cipher` uses [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials) for automatic service account detection. ADC automatically searches for credentials in the following order:
+1. `GOOGLE_APPLICATION_CREDENTIALS` environment variable
+2. `~/.config/gcloud/application_default_credentials.json` (gcloud CLI)
+3. Runtime environment (Cloud Run, GKE, Compute Engine, App Engine)
+4. Workload Identity binding (GKE)
 
-1. **Environment variable** — `GOOGLE_APPLICATION_CREDENTIALS` path
-2. **gcloud SDK** — `~/.config/gcloud/application_default_credentials.json`
-3. **Runtime environment** — Cloud Run, GKE, Compute Engine, App Engine
-4. **Workload Identity** — Kubernetes service account binding (GKE)
-
-**Setup Guide:**
-
-**Option 1: Local development with service account key**
+**Local Development:**
 ```bash
-# Create service account + download JSON key from GCP console
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 pnpm example
 ```
 
-**Option 2: Use Google Cloud SDK credentials**
-```bash
-# Uses existing gcloud authentication
-gcloud auth application-default login
-pnpm example
-```
-
-**Option 3: Runtime environments (Cloud Run, GKE, Compute Engine)**
-Credentials are automatically available from the runtime service account — no configuration needed. Ensure the service account has `roles/cloudkms.cryptographer` permission.
-
-**Option 4: Workload Identity (GKE)**
-Bind Kubernetes service account to GCP service account with KMS permissions:
-```bash
-kubectl annotate serviceaccount kms-user \
-  iam.gke.io/gcp-service-account=kms-app@PROJECT_ID.iam.gserviceaccount.com
-```
-
-**Credential Validation:** Credentials are verified at module startup via `getProjectId()` — throws `InternalServerErrorException` if not found, invalid, or lack required permissions.
+**Validation:** Module startup throws `InternalServerErrorException` if credentials are not found or lack `roles/cloudkms.cryptographer` permission.
 
 ## How It Works
 
@@ -240,70 +207,34 @@ userId: 'usr-42'    → .../cryptoKeys/user-usr-42
 
 ### Envelope Encryption for Cost Savings
 
-All resources within a tenant (users, emails, documents, etc.) share a **single KMS key**, using envelope encryption to minimize KMS API calls and reduce costs.
+Share a **single KMS key** per tenant; use envelope encryption to minimize KMS API calls.
 
 **How It Works:**
 1. Generate random DEK (Data Encryption Key)
 2. Encrypt data locally with AES-256-GCM
 3. Wrap DEK once with tenant's KMS key
 4. Store wrapped DEK + encrypted data
-5. Reuse same wrapped DEK for multiple resources
 
-**Top 3 Benefits:**
-
-| Benefit | Impact |
-| --- | --- |
-| **💰 Cost Efficiency** | Single KMS key per tenant → 1 API call per encryption operation, not per resource |
-| **⚡ Performance** | 90% of work (encryption) done locally; KMS only used for key wrapping |
-| **🔐 Security** | Complete isolation at tenant level; all resources encrypted with proven AES-256-GCM |
-
-**Example: Org with 1000 Users**
-- ❌ Without envelope encryption: 1000 KMS calls per operation = expensive
-- ✅ With envelope encryption: 1 KMS call per operation = cost-effective at scale
+**Benefits:** Single KMS call per operation (not per record) → cost-effective at scale.
 
 ## Observability
 
-`nestjs-cipher` instruments `encrypt` and `decrypt` with [OpenTelemetry](https://opentelemetry.io/) spans. When an OTel SDK is configured in your application, traces are emitted automatically — no additional configuration needed in this module.
+`nestjs-cipher` instruments encrypt/decrypt with [OpenTelemetry](https://opentelemetry.io/) spans. Traces are emitted automatically if an OTel SDK is configured; no additional setup needed in this module.
 
-### Span Names
+**Spans:** `nestjs-cipher.encrypt`, `nestjs-cipher.decrypt`
 
-| Operation | Span Name |
-| --- | --- |
-| Encrypt | `nestjs-cipher.encrypt` |
-| Decrypt | `nestjs-cipher.decrypt` |
-
-### Span Attributes
-
-| Attribute | Example value | Description |
-| --- | --- | --- |
-| `cipher.provider` | `GCP_KMS` | Active provider |
-| `cipher.context.type` | `tenant` or `user` | Isolation level |
-| `cipher.payload.version` | `1` | Payload version (decrypt only) |
-
-Span status is set to `ERROR` with the error message on failure, and `OK` on success.
-
-### Setup (NestJS + OpenTelemetry SDK)
-
-```typescript
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-
-const sdk = new NodeSDK({
-  traceExporter: new OTLPTraceExporter({ url: 'http://localhost:4318/v1/traces' }),
-});
-
-sdk.start();
-```
-
-If no SDK is configured, `@opentelemetry/api` operates as a no-op — zero performance overhead.
+**Attributes:**
+- `cipher.provider` — KMS provider (e.g., `GCP_KMS`)
+- `cipher.context.type` — `tenant` or `user`
+- `cipher.payload.version` — Payload version
 
 ## Security Best Practices
 
-1. ✅ Store credentials in env vars; never commit keys
-2. ✅ Grant service account only `roles/cloudkms.cryptographer` (least privilege)
+1. ✅ Store credentials in secure vault; never commit keys
+2. ✅ Grant service account least privilege (`roles/cloudkms.cryptographer` only)
 3. ✅ Enable automatic key rotation (90 days recommended)
-4. ✅ DEK zeroed from memory after each operation
-5. ✅ Use transport security (TLS) for all KMS communication
+4. ✅ Monitor Cloud Audit Logs for unauthorized access
+5. ✅ Use TLS for all communication
 
 ## Testing with Example
 
@@ -319,71 +250,26 @@ The example demonstrates encryption/decryption with logging output.
 
 ## Troubleshooting
 
-| Issue                                    | Solution                                                                           |
-| ---------------------------------------- | ---------------------------------------------------------------------------------- |
-| `Provider not initialized`               | Ensure `GOOGLE_APPLICATION_CREDENTIALS` is set; verify service account has IAM role |
-| `PERMISSION_DENIED` (GCP KMS)            | Grant service account `roles/cloudkms.cryptographer` via gcloud or Console         |
-| Decryption fails with `ERR_OSSL_PVF_*`   | Verify same `tenantId`/`userId` context used for encrypt & decrypt                |
-| High KMS latency (>100ms)                | Check GCP region; consider multi-region replication for failover                  |
-| `InternalServerErrorException` at startup | Module failed credential validation; check logs for `getProjectId()` errors        |
-| Module initialization hangs              | Verify network connectivity to Google Cloud KMS API endpoints                     |
-| Tests fail with ADC not found            | Set `GOOGLE_APPLICATION_CREDENTIALS` or run `gcloud auth application-default login` |
+| Issue | Solution |
+| --- | --- |
+| Module fails at startup | Check credentials are set and have correct KMS permissions |
+| Decryption fails | Verify same `tenantId`/`userId` context used for encrypt & decrypt |
+| High latency | Check network connectivity to KMS provider; consider local caching |
+| Credential validation errors | Ensure `GOOGLE_APPLICATION_CREDENTIALS` is set or `gcloud auth application-default login` run |
 
 ## Production Deployment
 
-### Pre-Launch Checklist
+**Essentials:**
+- Use `Providers.GCP_KMS` (not Local)
+- Store credentials in secure vault (GCP Secret Manager, HashiCorp Vault, etc.)
+- Grant service account `roles/cloudkms.cryptographer` only
+- Enable Cloud Audit Logs for access monitoring
+- Set up alerts for KMS API errors and quota usage
 
-Before deploying to production, ensure:
-
-**Infrastructure**
-- [ ] GCP project created with Cloud KMS API enabled
-- [ ] Service account created with `roles/cloudkms.cryptographer` (least privilege)
-- [ ] KMS key ring + crypto key configured in target region(s)
-- [ ] Workload Identity or service account key downloaded + stored securely
-
-**Code**
-- [ ] Provider set to `Providers.GCP_KMS` (not Local)
-- [ ] Environment variables configured: `GCP_KMS_PROJECT_ID`, `GCP_KMS_KEY_RING`, `GCP_KMS_LOCATION`
-- [ ] All encrypted fields use `tenantId` or `userId` context for isolation
-- [ ] Error handling: catch `InternalServerErrorException` on module initialization
-- [ ] Health check enabled: module throws on invalid credentials at startup
-
-**Security**
-- [ ] Credentials stored in secrets manager (GCP Secret Manager, HashiCorp Vault, etc.)
-- [ ] RBAC: service account only has `roles/cloudkms.cryptographer` (not `roles/owner`)
-- [ ] Network: if using service account key, restrict IP ranges (optional for Workload Identity)
-- [ ] Audit logging: Cloud Audit Logs enabled + monitored via Cloud Logging
-- [ ] Key rotation: auto-rotation set to 90 days (GCP default)
-
-**Operations**
-- [ ] Backup strategy: Plan for key escrow or multi-region replication
-- [ ] Monitoring: Set up alerts on KMS API latency, error rates, quota usage
-- [ ] Runbook: Documented procedure for credential rotation, key recovery
-- [ ] Testing: Run integration tests against production GCP credentials before go-live
-
-### High Availability & Disaster Recovery
-
-**Multi-Region Setup:**
-```bash
-# Create replication key in second region
-gcloud kms keys create pii-key \
-  --location=us-central1 \
-  --keyring=pii-ring \
-  --labels=failover=true
-```
-
-**Key Recovery (if credential compromised):**
-1. Rotate service account credentials immediately
-2. Update all application deployments with new credentials
-3. Monitor KMS audit logs for unauthorized access attempts
-4. Optionally: create new key version + re-wrap all DEKs (data remains encrypted during transition)
-
-### Cost Optimization
-
-- **Envelope encryption:** Single KMS call per operation (not per record)
-- **Regional keys:** Store keys in same region as workload to reduce latency
-- **Request batching:** Pre-wrap DEKs for high-volume operations
-- **Pricing:** ~$6/month for 1M KMS operations (check [GCP KMS pricing](https://cloud.google.com/kms/pricing))
+**Fault Tolerance:**
+- Create KMS keys in multiple regions for failover
+- Rotate credentials immediately if compromised
+- Module startup validates credentials and fails fast on invalid configuration
 
 ## Development
 
