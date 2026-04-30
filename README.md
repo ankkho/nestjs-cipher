@@ -186,6 +186,8 @@ Decrypt reverses: unwrap DEK → decrypt → zero DEK
 
 ## Multi-Tenant Architecture
 
+`nestjs-cipher` uses **envelope encryption** to achieve secure, cost-effective multi-tenant data isolation.
+
 ### Tenant Isolation
 
 Each tenant maps to a distinct KMS key:
