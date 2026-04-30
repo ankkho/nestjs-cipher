@@ -301,7 +301,7 @@ See [.github/README.md](.github/README.md) for CI/CD and repository best practic
 ## Resources
 
 - **Documentation**: [.github/README.md](.github/README.md) - Repository best practices
-- **Example**: [./example](./example) - Working sample with LocalProvider
+- **Example**: [example](./example) - Working sample with LocalProvider
 - **Security**: [.github/SECURITY.md](.github/SECURITY.md) - Security policy
 - **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
 
