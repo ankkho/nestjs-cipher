@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.rs/changesets/0.5.0/json.schema.json",
+  "changelog": [
+    [
+      "@changesets/changelog-github",
+      {
+        "repo": "ankkho/nestjs-cipher"
+      }
+    ]
+  ],
+  "commit": true,
+  "fixed": [],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}
