@@ -1,2 +1,2 @@
 #!/bin/sh
-pnpm lint:fix
+pnpm build && pnpm lint:fix && pnpm test
