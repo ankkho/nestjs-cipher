@@ -54,7 +54,7 @@ pnpm install nestjs-cipher
 ```
 
 **Requirements:**
-- Node.js 20.12.0 LTS or higher (Node 24+ recommended for production)
+- Node.js 24.15.0 LTS or higher
 - pnpm 10.32.0+
 
 ## Quick Start
@@ -234,8 +234,14 @@ Share a **single KMS key** per tenant; use envelope encryption to minimize KMS A
 
 See [example](./example) for a complete working example with LocalProvider.
 
-### Start the example in watch mode
+### Run the example
 
+First, build the example:
+```bash
+pnpm build:example
+```
+
+Then run it:
 ```bash
 pnpm example
 ```
@@ -268,7 +274,7 @@ The example demonstrates encryption/decryption with logging output.
 ## Development
 
 ### Requirements
-- Node.js 20.12.0 LTS or higher (Node 24+ recommended for production)
+- Node.js 24.15.0 LTS or higher
 - pnpm 10.32.0+
 
 ### Commands
@@ -283,7 +289,10 @@ pnpm build
 # Build example
 pnpm build:example
 
-# Run example in watch mode
+# Build example
+pnpm build:example
+
+# Run example (compiled code)
 pnpm example
 
 # Run tests

@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "build:example": "rm -rf example/dist && tsc --project example/tsconfig.json",
-    "example": "nest start --watch example/main.ts",
+    "example": "node example/dist/example/main.js",
     "lint": "xo --ignore=example",
     "lint:fix": "xo --fix --ignore=example",
     "test": "vitest",
@@ -40,7 +40,7 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=20.12.0"
+    "node": ">=24.15.0"
   },
   "packageManager": "pnpm@10.32.0",
   "dependencies": {
@@ -92,7 +92,8 @@
     "ignores": [
       "dist",
       "node_modules",
-      "example"
+      "example",
+      "**/dist/**"
     ],
     "rules": {
       "import/extensions": "off",
