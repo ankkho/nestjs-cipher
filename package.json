@@ -49,8 +49,8 @@
     "eslint-config-xo-typescript": "^9.0.0",
     "eslint-plugin-unicorn": "^63.0.0",
     "husky": "^9.1.7",
-    "prettier": "^4.0.0",
-    "typescript": "^6.0.3",
+    "prettier": "^3.8.3",
+    "typescript": "^5.9.0",
     "vitest": "^3.2.0",
     "xo": "^2.0.2"
   },
