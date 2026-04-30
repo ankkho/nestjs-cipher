@@ -1,5 +1,6 @@
 import {createCipheriv, createDecipheriv, randomBytes} from 'node:crypto';
 import {Injectable} from '@nestjs/common';
+import {SpanStatusCode, trace} from '@opentelemetry/api';
 import {Context, EncryptedPayload} from './interface';
 import {ProvidersService} from './provider.service';
 import {buildKeyAlias} from './utils';
@@ -8,6 +9,8 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const TAG_LENGTH = 16;
 const CURRENT_PAYLOAD_VERSION = 1;
+
+const tracer = trace.getTracer('nestjs-cipher');
 
 @Injectable()
 export class CipherService {
