@@ -14,7 +14,6 @@
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [How It Works](#how-it-works)
-- [API Reference](#api-reference)
 - [Multi-Tenant Architecture](#multi-tenant-architecture)
 - [Observability](#observability)
 - [Security Best Practices](#security-best-practices)
@@ -183,34 +182,7 @@ Decrypt reverses: unwrap DEK → decrypt → zero DEK
 - Each `tenantId`/`userId` gets its own KMS key
 - Same context must be used for encrypt & decrypt
 - DEK never touches disk; only wrapped DEK stored
-
-## API Reference
-
-### CipherService
-
-```typescript
-encrypt(plaintext: string, context: Context): Promise<EncryptedPayload>
-decrypt(payload: EncryptedPayload, context: Context): Promise<string>
-```
-
-### Types
-
-```typescript
-interface EncryptedPayload {
-  v: number; // Version (1)
-  ciphertext: string; // Hex-encoded
-  wrappedDek: string; // Base64-encoded
-  iv: string; // Hex-encoded
-  tag: string; // Hex-encoded
-}
-
-interface Context {
-  tenantId?: string; // Preferred (generates key: tenant-{id})
-  userId?: string; // Fallback (generates key: user-{id})
-}
-```
-
-At least one of `tenantId` or `userId` is required.
+- **⚠️ At least one of `tenantId` or `userId` is required**
 
 ## Multi-Tenant Architecture
 
