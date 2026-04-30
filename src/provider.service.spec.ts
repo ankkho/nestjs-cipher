@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest';
-import {ProvidersService} from './provider.service';
+import { describe, expect, it } from 'vitest';
+import { ProvidersService } from './provider.service';
 
 describe('ProvidersService', () => {
   it('should be defined', () => {
