@@ -1,5 +1,7 @@
 # nestjs-cipher
 
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue) ![NestJS](https://img.shields.io/badge/NestJS-11-red) ![Node.js](https://img.shields.io/badge/Node.js-20+-green) ![pnpm](https://img.shields.io/badge/pnpm-10.32+-F69D3D) ![License](https://img.shields.io/badge/License-MIT-yellow) ![Production](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+
 Production-grade NestJS encryption module for PII protection using AES-256-GCM locally with optional GCP Cloud KMS key wrapping.
 
 ## Table of Contents
