@@ -1,4 +1,4 @@
-import {type InjectionToken} from '@nestjs/common';
+import { type InjectionToken } from '@nestjs/common';
 
 /** Supported KMS providers for key wrapping */
 export enum Providers {
@@ -13,16 +13,16 @@ export const CIPHER_OPTIONS: InjectionToken<CipherOptions> =
 /** Discriminated union ensures gcp config is required when provider is GCP_KMS */
 export type CipherOptions =
   | {
-      provider: Providers.LOCAL;
-    }
+    provider: Providers.LOCAL;
+  }
   | {
-      provider: Providers.GCP_KMS;
-      gcp: {
-        projectId: string;
-        location: string;
-        keyRing: string;
-      };
+    provider: Providers.GCP_KMS;
+    gcp: {
+      projectId: string;
+      location: string;
+      keyRing: string;
     };
+  };
 
 /** Encryption context for tenant/user isolation via KMS key path generation */
 export type Context = {
