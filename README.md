@@ -72,7 +72,7 @@ export class UserService {
 ### Start the example server
 
 ```bash
-pnpm examples:dev
+pnpm example:dev
 ```
 
 ### POST - Encrypt Data

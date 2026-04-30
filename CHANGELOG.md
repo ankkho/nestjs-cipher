@@ -20,4 +20,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Payload version routing for forward-compatible decryption
 - Strongly-typed interfaces and injection tokens
 - Full TypeScript support with strict mode
-- Comprehensive documentation and examples
+- Comprehensive documentation and example
