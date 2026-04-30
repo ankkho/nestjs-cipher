@@ -2,9 +2,9 @@
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue) ![NestJS](https://img.shields.io/badge/NestJS-11-red) ![Node.js](https://img.shields.io/badge/Node.js-20+-green) ![pnpm](https://img.shields.io/badge/pnpm-10.32+-F69D3D) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-> Production-grade NestJS encryption module for PII protection with plug-and-play KMS integration.
+> Production-grade NestJS encryption module for PII protection with multi-cloud KMS integration.
 > 
-> Encrypt sensitive data (emails, PII, tokens) at rest using industry-standard **AES-256-GCM**. Keys are managed via **Google Cloud KMS** (with optional local-only mode for development).
+> Encrypt sensitive data (emails, PII, tokens) at rest using industry-standard **AES-256-GCM**. Keys are managed via **Google Cloud KMS** (AWS KMS and Azure Key Vault coming soon), with optional local-only mode for development.
 
 ## Table of Contents
 
@@ -45,6 +45,8 @@
 **LOCAL** — In-memory keys; no persistence. Dev and CI/CD only.
 
 **GCP_KMS** — Enterprise-grade key management with audit logging, auto-rotation, and multi-region support.
+
+**Coming Soon:** AWS KMS, Azure Key Vault
 
 ## Installation
 
