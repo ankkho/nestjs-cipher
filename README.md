@@ -60,44 +60,9 @@ pnpm install nestjs-cipher
 
 ## Quick Start
 
-### Register Module (GCP KMS — Production)
+### ⭐ Register Module (Recommended — ConfigService)
 
-```typescript
-import { CipherModule, Providers } from 'nestjs-cipher';
-
-@Module({
-  imports: [
-    CipherModule.forRoot({
-      provider: Providers.GCP_KMS,
-      gcp: {
-        projectId: process.env.GCP_KMS_PROJECT_ID!,
-        location: 'europe-west3', // e.g., us-central1
-        keyRing: process.env.GCP_KMS_KEY_RING!,
-      },
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-### Register Module (Local — Development)
-
-```typescript
-import { CipherModule, Providers } from 'nestjs-cipher';
-
-@Module({
-  imports: [
-    CipherModule.forRoot({
-      provider: Providers.LOCAL, // ⚠️ Dev/test only
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-### Async Configuration (ConfigService)
-
-Use `forRootAsync()` when loading credentials from `ConfigService`, Vault, or any async source:
+All environment variables must come from **NestJS ConfigService**.
 
 ```typescript
 import { CipherModule, Providers } from 'nestjs-cipher';
@@ -105,6 +70,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(), // Load .env automatically
     CipherModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -116,6 +82,31 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           location: config.getOrThrow('GCP_KMS_LOCATION'),
         },
       }),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Then set environment variables:
+```bash
+GCP_KMS_PROJECT_ID=my-project
+GCP_KMS_LOCATION=us-central1
+GCP_KMS_KEY_RING=pii-ring
+GCP_KMS_CREDENTIALS_PATH=/path/to/service-account-key.json
+```
+
+### Simple Usage (LocalProvider — Development Only)
+
+For quick local testing without GCP setup:
+
+```typescript
+import { CipherModule, Providers } from 'nestjs-cipher';
+
+@Module({
+  imports: [
+    CipherModule.forRoot({
+      provider: Providers.LOCAL, // ⚠️ Dev/test only — keys in memory
     }),
   ],
 })
