@@ -30,7 +30,7 @@
 - **Multi-Tenant:** Automatic tenant/user-level key isolation
 - **Fast:** ~10-20ms per operation (90% local, minimal KMS calls)
 - **Observable:** Pino logging + OpenTelemetry instrumentation
-- **Production-Ready:** Full TypeScript, 13 unit tests, CI/CD validated
+- **Production-Ready:** Full TypeScript, CI/CD validated
 
 ## Providers
 
@@ -54,7 +54,7 @@ pnpm install nestjs-cipher
 ```
 
 **Requirements:**
-- Node.js 24.15.0 LTS or higher
+- Node.js 20.0.0 LTS or higher
 - pnpm 10.32.0+
 
 ## Quick Start
@@ -88,6 +88,33 @@ import { CipherModule, Providers } from 'nestjs-cipher';
   imports: [
     CipherModule.forRoot({
       provider: Providers.LOCAL, // ⚠️ Dev/test only
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Async Configuration (ConfigService)
+
+Use `forRootAsync()` when loading credentials from `ConfigService`, Vault, or any async source:
+
+```typescript
+import { CipherModule, Providers } from 'nestjs-cipher';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
+@Module({
+  imports: [
+    CipherModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        provider: Providers.GCP_KMS,
+        gcp: {
+          projectId: config.getOrThrow('GCP_KMS_PROJECT_ID'),
+          keyRing: config.getOrThrow('GCP_KMS_KEY_RING'),
+          location: config.getOrThrow('GCP_KMS_LOCATION'),
+        },
+      }),
     }),
   ],
 })
@@ -196,6 +223,10 @@ The entire encrypted payload is persisted in your database column:
 }
 ```
 
+> **`wrappedDek` is safe to store.** It is encrypted by KMS and is useless without KMS access. It is not a plaintext secret. The actual DEK is never persisted — it exists only in memory during encrypt/decrypt and is zeroed immediately after.
+
+> **Payload versioning (`v`).** The `v` field enables future algorithm migrations. To migrate existing `v:1` records, read-decrypt with the old version and re-encrypt with the new one during a background migration job. Old key versions remain usable for decryption after KMS rotation.
+
 ## Multi-Tenant Architecture
 
 `nestjs-cipher` uses **envelope encryption** to achieve secure, cost-effective multi-tenant data isolation.
@@ -286,7 +317,7 @@ The example demonstrates encryption/decryption with logging output.
 ## Development
 
 ### Requirements
-- Node.js 24.15.0 LTS or higher
+- Node.js 20.0.0 LTS or higher
 - pnpm 10.32.0+
 
 ### Commands
@@ -297,9 +328,6 @@ pnpm install
 
 # Build library
 pnpm build
-
-# Build example
-pnpm build:example
 
 # Build example
 pnpm build:example
