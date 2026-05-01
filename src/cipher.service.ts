@@ -1,9 +1,10 @@
-import {createCipheriv, createDecipheriv, randomBytes} from 'node:crypto';
-import {Injectable} from '@nestjs/common';
-import {SpanStatusCode, trace} from '@opentelemetry/api';
-import {Context, EncryptedPayload} from './interface';
-import {ProviderService} from './provider.service';
-import {buildKeyAlias} from './utils';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable } from '@nestjs/common';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { Context, EncryptedPayload } from './interface';
+import { ProviderService } from './provider.service';
+import { buildKeyAlias } from './utils';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -14,7 +15,10 @@ const tracer = trace.getTracer('nestjs-cipher');
 
 @Injectable()
 export class CipherService {
-  constructor(private readonly ProviderService: ProviderService) {}
+  constructor(
+    private readonly ProviderService: ProviderService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+  ) { }
 
   /**
    * Encrypt data using envelope encryption (AES-256-GCM + KMS-wrapped DEK)
@@ -59,7 +63,7 @@ export class CipherService {
       // Zero out DEK from memory
       dek.fill(0);
 
-      span.setStatus({code: SpanStatusCode.OK});
+      span.setStatus({ code: SpanStatusCode.OK });
 
       // Encode to base64 for JSON serialization
       return {
@@ -70,7 +74,7 @@ export class CipherService {
         tag: tag.toString('base64'),
       };
     } catch (error) {
-      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
+      span.setStatus({ code: SpanStatusCode.ERROR, message: String(error) });
       throw error;
     } finally {
       span.end();
@@ -108,10 +112,10 @@ export class CipherService {
         }
       }
 
-      span.setStatus({code: SpanStatusCode.OK});
+      span.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {
-      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
+      span.setStatus({ code: SpanStatusCode.ERROR, message: String(error) });
       throw error;
     } finally {
       span.end();
@@ -136,7 +140,19 @@ export class CipherService {
     const keyAlias = buildKeyAlias(context);
     const keyPath = provider.generateKeyPath(keyAlias);
 
-    const dek = await provider.unwrap(wrappedDek, keyPath);
+    // Cache key is scoped to the wrappedDek — unique per encrypted record.
+    // On a cache hit the KMS round-trip is skipped entirely.
+    const cacheKey = `dek:${payload.wrappedDek}`;
+    const cachedDekB64 = await this.cache.get<string>(cacheKey);
+
+    const dek = cachedDekB64
+      ? Buffer.from(cachedDekB64, 'base64')
+      : await provider.unwrap(wrappedDek, keyPath);
+
+    if (!cachedDekB64) {
+      // Store as base64 string; TTL is configured in CacheModule registration.
+      await this.cache.set(cacheKey, dek.toString('base64'));
+    }
 
     try {
       // Decrypt ciphertext with DEK
