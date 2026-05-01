@@ -50,7 +50,7 @@
 ## Installation
 
 ```bash
-pnpm install nestjs-cipher
+pnpm install @ankkho/nestjs-cipher
 ```
 
 **Requirements:**
@@ -65,7 +65,7 @@ All environment variables via **NestJS ConfigService**:
 
 ```typescript
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CipherModule, Providers } from 'nestjs-cipher';
+import { CipherModule, Providers } from '@ankkho/nestjs-cipher';
 
 @Module({
   imports: [
@@ -97,7 +97,7 @@ GCP_KMS_KEY_RING=pii-ring
 ### LocalProvider (Development Only)
 
 ```typescript
-import { CipherModule, Providers } from 'nestjs-cipher';
+import { CipherModule, Providers } from '@ankkho/nestjs-cipher';
 
 @Module({
   imports: [CipherModule.forRoot({ provider: Providers.LOCAL })],
@@ -110,7 +110,7 @@ export class AppModule {}
 ### Use Service
 
 ```typescript
-import { CipherService } from 'nestjs-cipher';
+import { CipherService } from '@ankkho/nestjs-cipher';
 
 @Injectable()
 export class UserService {
