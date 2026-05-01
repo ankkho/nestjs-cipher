@@ -1,16 +1,16 @@
-import { CacheModule } from '@nestjs/cache-manager';
+import {CacheModule} from '@nestjs/cache-manager';
 import {
   DynamicModule,
   FactoryProvider,
   Module,
   ModuleMetadata,
 } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TerminusModule } from '@nestjs/terminus';
-import { CipherHealthIndicator } from './cipher.health';
-import { CipherService } from './cipher.service';
-import { CIPHER_OPTIONS, CipherOptions } from './interface';
-import { ProviderService } from './provider.service';
+import {ConfigModule} from '@nestjs/config';
+import {TerminusModule} from '@nestjs/terminus';
+import {CipherHealthIndicator} from './cipher.health';
+import {CipherService} from './cipher.service';
+import {CIPHER_OPTIONS, CipherOptions} from './interface';
+import {ProviderService} from './provider.service';
 
 export type CipherOptionsAsync = Pick<ModuleMetadata, 'imports'> & {
   useFactory: (...args: any[]) => Promise<CipherOptions> | CipherOptions;
@@ -33,9 +33,13 @@ export class CipherModule {
   static forRoot(options: CipherOptions): DynamicModule {
     return {
       module: CipherModule,
-      imports: [ConfigModule, TerminusModule, CacheModule.register({ ttl: DEK_CACHE_TTL_MS })],
+      imports: [
+        ConfigModule,
+        TerminusModule,
+        CacheModule.register({ttl: DEK_CACHE_TTL_MS}),
+      ],
       providers: [
-        { provide: CIPHER_OPTIONS, useValue: options },
+        {provide: CIPHER_OPTIONS, useValue: options},
         ...CIPHER_PROVIDERS,
       ],
       exports: [CIPHER_OPTIONS, ...CIPHER_PROVIDERS],
@@ -45,7 +49,12 @@ export class CipherModule {
   static forRootAsync(options: CipherOptionsAsync): DynamicModule {
     return {
       module: CipherModule,
-      imports: [ConfigModule, TerminusModule, CacheModule.register({ ttl: DEK_CACHE_TTL_MS }), ...(options.imports ?? [])],
+      imports: [
+        ConfigModule,
+        TerminusModule,
+        CacheModule.register({ttl: DEK_CACHE_TTL_MS}),
+        ...(options.imports ?? []),
+      ],
       providers: [
         CipherModule.buildOptionsProvider(options),
         ...CIPHER_PROVIDERS,

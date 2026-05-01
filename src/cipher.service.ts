@@ -1,10 +1,10 @@
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable } from '@nestjs/common';
-import { SpanStatusCode, trace } from '@opentelemetry/api';
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
-import { Context, EncryptedPayload } from './interface';
-import { ProviderService } from './provider.service';
-import { buildKeyAlias } from './utils';
+import {createCipheriv, createDecipheriv, randomBytes} from 'node:crypto';
+import {Cache, CACHE_MANAGER} from '@nestjs/cache-manager';
+import {Inject, Injectable} from '@nestjs/common';
+import {SpanStatusCode, trace} from '@opentelemetry/api';
+import {Context, EncryptedPayload} from './interface';
+import {ProviderService} from './provider.service';
+import {buildKeyAlias} from './utils';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -18,7 +18,7 @@ export class CipherService {
   constructor(
     private readonly ProviderService: ProviderService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
-  ) { }
+  ) {}
 
   /**
    * Encrypt data using envelope encryption (AES-256-GCM + KMS-wrapped DEK)
@@ -63,7 +63,7 @@ export class CipherService {
       // Zero out DEK from memory
       dek.fill(0);
 
-      span.setStatus({ code: SpanStatusCode.OK });
+      span.setStatus({code: SpanStatusCode.OK});
 
       // Encode to base64 for JSON serialization
       return {
@@ -74,7 +74,7 @@ export class CipherService {
         tag: tag.toString('base64'),
       };
     } catch (error) {
-      span.setStatus({ code: SpanStatusCode.ERROR, message: String(error) });
+      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
       throw error;
     } finally {
       span.end();
@@ -112,10 +112,10 @@ export class CipherService {
         }
       }
 
-      span.setStatus({ code: SpanStatusCode.OK });
+      span.setStatus({code: SpanStatusCode.OK});
       return result;
     } catch (error) {
-      span.setStatus({ code: SpanStatusCode.ERROR, message: String(error) });
+      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
       throw error;
     } finally {
       span.end();
