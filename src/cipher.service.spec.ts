@@ -1,10 +1,11 @@
-import {beforeEach, describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {CipherService} from './cipher.service';
 import type {EncryptedPayload} from './interface';
 
 describe('CipherService', () => {
   let service: CipherService;
   let mockProvider: any;
+  let mockSpan: any;
 
   beforeEach(() => {
     mockProvider = {
@@ -12,19 +13,26 @@ describe('CipherService', () => {
         return `projects/test/locations/us/keyRings/kr/cryptoKeys/${alias}`;
       },
       async wrap(dek: Buffer) {
-        return dek;
+        // Return a copy of the DEK (in real KMS, this would be encrypted)
+        return Buffer.from(dek);
       },
       async unwrap(wrapped: Buffer) {
-        return wrapped;
+        // In real KMS, this decrypts and returns the DEK
+        return Buffer.from(wrapped);
       },
     };
 
-    const mockProvidersService = {
+    mockSpan = {
+      setStatus: vi.fn(),
+      end: vi.fn(),
+    };
+
+    const mockProviderService = {
       getProvider: () => mockProvider,
       getProviderType: () => 'LOCAL',
     } as any;
 
-    service = new CipherService(mockProvidersService);
+    service = new CipherService(mockProviderService);
   });
 
   describe('encrypt', () => {
@@ -67,6 +75,14 @@ describe('CipherService', () => {
         service.encrypt('data', {tenantId: 'tenant-1'}),
       ).rejects.toThrow('KMS error');
     });
+
+    it('should handle encryption with userId context', async () => {
+      const result = await service.encrypt('secret data', {userId: 'user-1'});
+
+      expect(result).toHaveProperty('v', 1);
+      expect(result).toHaveProperty('ciphertext');
+      expect(result).toHaveProperty('wrappedDek');
+    });
   });
 
   describe('decrypt', () => {
@@ -102,6 +118,28 @@ describe('CipherService', () => {
       await expect(
         service.decrypt(encrypted, {tenantId: 'tenant-1'}),
       ).rejects.toThrow('KMS unwrap failed');
+    });
+
+    it('should successfully round-trip encrypt/decrypt', async () => {
+      const plaintext = 'sensitive-data-123';
+      const encrypted = await service.encrypt(plaintext, {
+        tenantId: 'tenant-1',
+      });
+
+      const decrypted = await service.decrypt(encrypted, {
+        tenantId: 'tenant-1',
+      });
+
+      expect(decrypted).toBe(plaintext);
+    });
+
+    it('should handle decrypt with userId context', async () => {
+      const plaintext = 'user-secret';
+      const encrypted = await service.encrypt(plaintext, {userId: 'user-1'});
+
+      const decrypted = await service.decrypt(encrypted, {userId: 'user-1'});
+
+      expect(decrypted).toBe(plaintext);
     });
   });
 });
