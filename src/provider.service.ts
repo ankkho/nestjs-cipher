@@ -5,10 +5,10 @@ import {
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
-import { CIPHER_OPTIONS, CipherOptions, Providers } from './interface';
-import { GcpKmsProvider } from './providers/gcp.kms';
-import { IKeyProvider } from './providers/interface';
-import { LocalProvider } from './providers/local';
+import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
+import {GcpKmsProvider} from './providers/gcp.kms';
+import {IKeyProvider} from './providers/interface';
+import {LocalProvider} from './providers/local';
 
 /**
  * ProviderService
@@ -29,18 +29,18 @@ export class ProviderService implements OnModuleInit {
   private providerInstance!: IKeyProvider;
   private readonly logger = new Logger(ProviderService.name);
 
-  constructor(
-    @Inject(CIPHER_OPTIONS) private readonly options: CipherOptions,
-  ) {
+  constructor(@Inject(CIPHER_OPTIONS) private readonly options: CipherOptions) {
     this.provider = this.options.provider;
   }
 
   async onModuleInit() {
     try {
       await this.initProvider();
-      this.logger.log('KMS Provider initialized successfully', { provider: this.provider });
+      this.logger.log('KMS Provider initialized successfully', {
+        provider: this.provider,
+      });
     } catch (error) {
-      this.logger.error('Failed to initialize KMS Provider', { error });
+      this.logger.error('Failed to initialize KMS Provider', {error});
       throw new InternalServerErrorException(
         'Cryptographic Provider Initialization Failed',
       );
@@ -56,7 +56,7 @@ export class ProviderService implements OnModuleInit {
 
       case Providers.GCP_KMS: {
         this.providerInstance = await GcpKmsProvider.create(
-          this.options as Extract<CipherOptions, { provider: Providers.GCP_KMS }>,
+          this.options as Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
         );
         break;
       }
