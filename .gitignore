@@ -147,3 +147,17 @@ src/**/*.js
 src/**/*.d.ts
 src/**/*.js.map
 src/**/*.d.ts.map
+
+# OpenTofu / Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.lock.info
+# .terraform.lock.hcl should be committed — it pins provider versions for reproducibility
+*.auto.tfvars
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

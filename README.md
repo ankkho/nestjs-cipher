@@ -20,6 +20,7 @@
 - [Testing with Example](#testing-with-example)
 - [Troubleshooting](#troubleshooting)
 - [Production Deployment](#production-deployment)
+- [Infrastructure (OpenTofu)](#infrastructure-opentofu)
 - [Development](#development)
 - [Resources](#resources)
 
@@ -313,6 +314,14 @@ The example demonstrates encryption/decryption with logging output.
 - Create KMS keys in multiple regions for failover
 - Rotate credentials immediately if compromised
 - Module startup validates credentials and fails fast on invalid configuration
+
+## Infrastructure (OpenTofu)
+
+> Environments: `dev`, `test`, `stage`, `prod`.
+
+GCP KMS infrastructure is provisioned with [OpenTofu](https://opentofu.org/).
+
+Provider: [`GCP KMS`](./infra/tofu/gcp/README.md).
 
 ## Development
 
