@@ -26,6 +26,7 @@
 
 - **Envelope Encryption:** AES-256-GCM local encryption with optional KMS key wrapping
 - **Zero-Trust DEK:** Data Encryption Keys zeroed from memory after each operation
+- **DEK Caching:** Unwrapped DEKs cached in-memory (5 min TTL) to skip KMS on repeated reads
 - **Multi-Tenant:** Automatic tenant/user-level key isolation
 - **Fast:** ~10-20ms per operation (90% local, minimal KMS calls)
 - **Observable:** Pino logging + OpenTelemetry instrumentation
@@ -237,7 +238,7 @@ See [example/tofu-gcp/README.md](./example/tofu-gcp/README.md) for details.
 | --- | --- |
 | Module fails at startup | Check credentials are set and have correct KMS permissions |
 | Decryption fails | Verify same `tenantId`/`userId` context used for encrypt & decrypt |
-| High latency | Check network connectivity to KMS provider; consider local caching |
+| High latency | Check network connectivity to KMS provider; DEK caching is built-in (5 min TTL) |
 | Credential validation errors | Ensure `GOOGLE_APPLICATION_CREDENTIALS` is set or `gcloud auth application-default login` run |
 
 ## Production Deployment
