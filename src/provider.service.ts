@@ -2,13 +2,13 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   OnModuleInit,
 } from '@nestjs/common';
-import {PinoLogger} from 'nestjs-pino';
-import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
-import {GcpKmsProvider} from './providers/gcp.kms';
-import {IKeyProvider} from './providers/interface';
-import {LocalProvider} from './providers/local';
+import { CIPHER_OPTIONS, CipherOptions, Providers } from './interface';
+import { GcpKmsProvider } from './providers/gcp.kms';
+import { IKeyProvider } from './providers/interface';
+import { LocalProvider } from './providers/local';
 
 /**
  * ProviderService
@@ -27,32 +27,20 @@ import {LocalProvider} from './providers/local';
 export class ProviderService implements OnModuleInit {
   private readonly provider!: Providers;
   private providerInstance!: IKeyProvider;
+  private readonly logger = new Logger(ProviderService.name);
 
   constructor(
     @Inject(CIPHER_OPTIONS) private readonly options: CipherOptions,
-    private readonly logger: PinoLogger,
   ) {
-    if (this.logger) {
-      this.logger.setContext(ProviderService.name);
-    }
-
     this.provider = this.options.provider;
   }
 
   async onModuleInit() {
     try {
       await this.initProvider();
-      if (this.logger) {
-        this.logger.info(
-          {provider: this.provider},
-          'KMS Provider initialized successfully',
-        );
-      }
+      this.logger.log('KMS Provider initialized successfully', { provider: this.provider });
     } catch (error) {
-      if (this.logger) {
-        this.logger.error({error}, 'Failed to initialize KMS Provider');
-      }
-
+      this.logger.error('Failed to initialize KMS Provider', { error });
       throw new InternalServerErrorException(
         'Cryptographic Provider Initialization Failed',
       );
@@ -68,7 +56,7 @@ export class ProviderService implements OnModuleInit {
 
       case Providers.GCP_KMS: {
         this.providerInstance = await GcpKmsProvider.create(
-          this.options as Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
+          this.options as Extract<CipherOptions, { provider: Providers.GCP_KMS }>,
         );
         break;
       }

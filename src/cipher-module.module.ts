@@ -4,13 +4,12 @@ import {
   Module,
   ModuleMetadata,
 } from '@nestjs/common';
-import {ConfigModule} from '@nestjs/config';
-import {TerminusModule} from '@nestjs/terminus';
-import {LoggerModule} from 'nestjs-pino';
-import {CipherHealthIndicator} from './cipher.health';
-import {CipherService} from './cipher.service';
-import {CIPHER_OPTIONS, CipherOptions} from './interface';
-import {ProviderService} from './provider.service';
+import { ConfigModule } from '@nestjs/config';
+import { TerminusModule } from '@nestjs/terminus';
+import { CipherHealthIndicator } from './cipher.health';
+import { CipherService } from './cipher.service';
+import { CIPHER_OPTIONS, CipherOptions } from './interface';
+import { ProviderService } from './provider.service';
 
 export type CipherOptionsAsync = Pick<ModuleMetadata, 'imports'> & {
   useFactory: (...args: any[]) => Promise<CipherOptions> | CipherOptions;
@@ -29,9 +28,9 @@ export class CipherModule {
   static forRoot(options: CipherOptions): DynamicModule {
     return {
       module: CipherModule,
-      imports: [ConfigModule, TerminusModule, LoggerModule.forRoot()],
+      imports: [ConfigModule, TerminusModule],
       providers: [
-        {provide: CIPHER_OPTIONS, useValue: options},
+        { provide: CIPHER_OPTIONS, useValue: options },
         ...CIPHER_PROVIDERS,
       ],
       exports: [CIPHER_OPTIONS, ...CIPHER_PROVIDERS],
@@ -44,7 +43,6 @@ export class CipherModule {
       imports: [
         ConfigModule,
         TerminusModule,
-        LoggerModule.forRoot(),
         ...(options.imports ?? []),
       ],
       providers: [
