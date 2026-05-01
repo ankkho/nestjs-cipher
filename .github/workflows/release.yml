@@ -6,25 +6,30 @@ on:
 
 permissions:
   contents: write
-  packages: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
-  release-draft:
+  # Creates/updates a Release PR with bumped version and CHANGELOG on every push to main.
+  # When the Release PR is merged, creates a GitHub release and git tag.
+  release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release:
-    runs-on: ubuntu-latest
-    needs: release-draft
-    steps:
-      - uses: actions/checkout@v4
+      - uses: googleapis/release-please-action@v4
+        id: release
         with:
-          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Publishes to npm only after a GitHub release is created (Release PR merged).
+  publish:
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
@@ -32,6 +37,7 @@ jobs:
         with:
           node-version: 20.x
           cache: pnpm
+          registry-url: https://registry.npmjs.org
       - uses: actions/cache@v4
         with:
           path: node_modules
@@ -40,9 +46,6 @@ jobs:
             ${{ runner.os }}-pnpm-
       - run: pnpm install
       - run: pnpm build
-      - uses: changesets/action@v1
-        with:
-          publish: pnpm run release
+      - run: pnpm publish --access public --no-git-checks
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
