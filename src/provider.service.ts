@@ -4,11 +4,11 @@ import {
   InternalServerErrorException,
   OnModuleInit,
 } from '@nestjs/common';
-import { PinoLogger } from 'nestjs-pino';
-import { CIPHER_OPTIONS, CipherOptions, Providers } from './interface';
-import { GcpKmsProvider } from './providers/gcp.kms';
-import { IKeyProvider } from './providers/interface';
-import { LocalProvider } from './providers/local';
+import {PinoLogger} from 'nestjs-pino';
+import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
+import {GcpKmsProvider} from './providers/gcp.kms';
+import {IKeyProvider} from './providers/interface';
+import {LocalProvider} from './providers/local';
 
 /**
  * ProviderService
@@ -44,13 +44,13 @@ export class ProviderService implements OnModuleInit {
       await this.initProvider();
       if (this.logger) {
         this.logger.info(
-          { provider: this.provider },
+          {provider: this.provider},
           'KMS Provider initialized successfully',
         );
       }
     } catch (error) {
       if (this.logger) {
-        this.logger.error({ error }, 'Failed to initialize KMS Provider');
+        this.logger.error({error}, 'Failed to initialize KMS Provider');
       }
 
       throw new InternalServerErrorException(
@@ -68,7 +68,7 @@ export class ProviderService implements OnModuleInit {
 
       case Providers.GCP_KMS: {
         this.providerInstance = await GcpKmsProvider.create(
-          this.options as Extract<CipherOptions, { provider: Providers.GCP_KMS }>,
+          this.options as Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
         );
         break;
       }
