@@ -11,6 +11,7 @@
     "build": "tsc",
     "build:example": "rm -rf example/dist && tsc --project example/tsconfig.json",
     "example": "node example/dist/example/main.js",
+    "example:gcp": "node example/dist/example/gcp-adc/gcp-kms.example.js",
     "lint": "xo --ignore=example",
     "lint:fix": "xo --fix --ignore=example",
     "test": "vitest",

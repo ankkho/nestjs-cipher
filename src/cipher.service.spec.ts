@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CipherService } from './cipher.service';
-import type { EncryptedPayload } from './interface';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {CipherService} from './cipher.service';
+import type {EncryptedPayload} from './interface';
 
 describe('CipherService', () => {
   let service: CipherService;
@@ -49,7 +49,7 @@ describe('CipherService', () => {
     });
 
     it('should return base64-encoded fields', async () => {
-      const result = await service.encrypt('data', { tenantId: 'tenant-1' });
+      const result = await service.encrypt('data', {tenantId: 'tenant-1'});
 
       expect(typeof result.ciphertext).toBe('string');
       expect(typeof result.wrappedDek).toBe('string');
@@ -72,12 +72,12 @@ describe('CipherService', () => {
       };
 
       await expect(
-        service.encrypt('data', { tenantId: 'tenant-1' }),
+        service.encrypt('data', {tenantId: 'tenant-1'}),
       ).rejects.toThrow('KMS error');
     });
 
     it('should handle encryption with userId context', async () => {
-      const result = await service.encrypt('secret data', { userId: 'user-1' });
+      const result = await service.encrypt('secret data', {userId: 'user-1'});
 
       expect(result).toHaveProperty('v', 1);
       expect(result).toHaveProperty('ciphertext');
@@ -87,7 +87,7 @@ describe('CipherService', () => {
 
   describe('decrypt', () => {
     it('should accept v1 payload structure', async () => {
-      const encrypted = await service.encrypt('test', { tenantId: 'tenant-1' });
+      const encrypted = await service.encrypt('test', {tenantId: 'tenant-1'});
 
       expect(encrypted.v).toBe(1);
       expect(encrypted.ciphertext).toBeDefined();
@@ -104,7 +104,7 @@ describe('CipherService', () => {
       };
 
       await expect(
-        service.decrypt(invalid, { tenantId: 'tenant-1' }),
+        service.decrypt(invalid, {tenantId: 'tenant-1'}),
       ).rejects.toThrow('Unsupported payload version');
     });
 
@@ -113,10 +113,10 @@ describe('CipherService', () => {
         throw new Error('KMS unwrap failed');
       };
 
-      const encrypted = await service.encrypt('data', { tenantId: 'tenant-1' });
+      const encrypted = await service.encrypt('data', {tenantId: 'tenant-1'});
 
       await expect(
-        service.decrypt(encrypted, { tenantId: 'tenant-1' }),
+        service.decrypt(encrypted, {tenantId: 'tenant-1'}),
       ).rejects.toThrow('KMS unwrap failed');
     });
 
@@ -135,9 +135,9 @@ describe('CipherService', () => {
 
     it('should handle decrypt with userId context', async () => {
       const plaintext = 'user-secret';
-      const encrypted = await service.encrypt(plaintext, { userId: 'user-1' });
+      const encrypted = await service.encrypt(plaintext, {userId: 'user-1'});
 
-      const decrypted = await service.decrypt(encrypted, { userId: 'user-1' });
+      const decrypted = await service.decrypt(encrypted, {userId: 'user-1'});
 
       expect(decrypted).toBe(plaintext);
     });
