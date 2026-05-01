@@ -148,7 +148,7 @@ describe('CipherService', () => {
 
       // First decrypt: cache miss → unwrap is called and DEK is stored
       const unwrapSpy = vi.spyOn(mockProvider, 'unwrap');
-      await service.decrypt(encrypted, {tenantId: 'tenant-1'});
+      await service.decrypt(encrypted, { tenantId: 'tenant-1' });
       expect(unwrapSpy).toHaveBeenCalledTimes(1);
 
       // Capture the DEK that was stored in cache
