@@ -295,6 +295,7 @@ See [.github/README.md](.github/README.md) for CI/CD and repository best practic
 ## Resources
 
 - [Contributing](./CONTRIBUTING.md) — Contribution guidelines
+- [Release Process](./RELEASE_README.md) — Automated release workflow
 - [Security Policy](./.github/SECURITY.md) — Security & reporting
 - [Example](./example) — Working sample
 - [Infrastructure (OpenTofu)](./infra/tofu/gcp/README.md) — GCP KMS setup
