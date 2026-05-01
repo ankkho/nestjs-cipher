@@ -1,8 +1,8 @@
-import {ConfigService} from '@nestjs/config';
-import {Logger} from '@nestjs/common';
-import {NestFactory} from '@nestjs/core';
-import {AppGcpModule} from './app-gcp.module';
-import {GcpKmsService} from './gcp-kms.service';
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
+import { AppGcpModule } from './app-gcp.module';
+import { GcpKmsService } from './gcp-kms.service';
 
 async function bootstrap() {
   const logger = new Logger('GCP-KMS Example');

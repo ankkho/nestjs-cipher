@@ -1,8 +1,8 @@
-import {Module} from '@nestjs/common';
-import {ConfigModule, ConfigService} from '@nestjs/config';
-import {LoggerModule} from 'nestjs-pino';
-import {CipherModule, Providers} from '../../src/index';
-import {GcpKmsService} from './gcp-kms.service';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
+import { CipherModule, Providers } from '../../src/index';
+import { GcpKmsService } from './gcp-kms.service';
 
 /**
  * GCP KMS Example with ConfigService-driven configuration
@@ -27,4 +27,4 @@ import {GcpKmsService} from './gcp-kms.service';
   ],
   providers: [GcpKmsService],
 })
-export class AppGcpModule {}
+export class AppGcpModule { }

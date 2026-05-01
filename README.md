@@ -267,21 +267,27 @@ Share a **single KMS key** per tenant; use envelope encryption to minimize KMS A
 
 ## Testing with Example
 
+### LocalProvider (Quick Start)
+
 See [example](./example) for a complete working example with LocalProvider.
 
-### Run the example
-
-First, build the example:
 ```bash
-pnpm build:example
+pnpm build:example && pnpm example
 ```
 
-Then run it:
-```bash
-pnpm example
-```
+### GCP KMS with OpenTofu (Production)
 
-The example demonstrates encryption/decryption with logging output.
+See [example/tofu-gcp](./example/tofu-gcp) for a production-ready example with OpenTofu infrastructure provisioning:
+
+- Provisions KMS key rings and tenant-specific keys
+- Uses NestJS ConfigService for all environment variables
+- Full ADC (Application Default Credentials) support
+
+```bash
+cd example/tofu-gcp
+source .env.gcp
+pnpm build && pnpm example:gcp
+```
 
 ## Troubleshooting
 
