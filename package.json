@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "build:example": "rm -rf example/dist && tsc --project example/tsconfig.json",
-    "example": "nest start --watch example/main.ts",
+    "example": "node example/dist/example/main.js",
+    "example:gcp": "node example/dist/example/gcp-adc/gcp-kms.example.js",
     "lint": "xo --ignore=example",
     "lint:fix": "xo --fix --ignore=example",
     "test": "vitest",
@@ -92,7 +93,8 @@
     "ignores": [
       "dist",
       "node_modules",
-      "example"
+      "example",
+      "**/dist/**"
     ],
     "rules": {
       "import/extensions": "off",

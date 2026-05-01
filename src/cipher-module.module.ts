@@ -10,7 +10,7 @@ import {LoggerModule} from 'nestjs-pino';
 import {CipherHealthIndicator} from './cipher.health';
 import {CipherService} from './cipher.service';
 import {CIPHER_OPTIONS, CipherOptions} from './interface';
-import {ProvidersService} from './provider.service';
+import {ProviderService} from './provider.service';
 
 export type CipherOptionsAsync = Pick<ModuleMetadata, 'imports'> & {
   useFactory: (...args: any[]) => Promise<CipherOptions> | CipherOptions;
@@ -19,7 +19,7 @@ export type CipherOptionsAsync = Pick<ModuleMetadata, 'imports'> & {
 
 const CIPHER_PROVIDERS = [
   CipherService,
-  ProvidersService,
+  ProviderService,
   CipherHealthIndicator,
 ];
 

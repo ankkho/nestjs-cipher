@@ -68,7 +68,7 @@ export class AwsKmsProvider implements IKeyProvider {
 }
 ```
 
-### 4. Update ProvidersService
+### 4. Update ProviderService
 
 Edit `src/provider.service.ts` `initProvider()` method:
 
