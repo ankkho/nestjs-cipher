@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/ankkho/nestjs-cipher/compare/v1.0.0...v1.1.0) (2026-05-01)
+
+
+### Features
+
+* update installation docs to use scoped package name @ankkho/nestjs-cipher ([#22](https://github.com/ankkho/nestjs-cipher/issues/22)) ([e24fdf4](https://github.com/ankkho/nestjs-cipher/commit/e24fdf42f96ff05f5feb5c3c972a8bbd59bdd1be))
+
 ## 1.0.0 (2026-05-01)
 
 
