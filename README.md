@@ -42,7 +42,7 @@
 
 **LOCAL** — In-memory keys; no persistence. Dev and CI/CD only.
 
-**GCP_KMS** — Enterprise-grade key management with audit logging, auto-rotation, and multi-region support.
+**GCP_KMS** — Enterprise-grade key management with audit logging, auto-rotation, and multi-region support. Note: GCP Cloud KMS is a paid service.
 
 **Coming Soon:** AWS KMS, Azure Key Vault
 
