@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import {ConfigModule} from '@nestjs/config';
 import {TerminusModule} from '@nestjs/terminus';
-import {LoggerModule} from 'nestjs-pino';
 import {CipherHealthIndicator} from './cipher.health';
 import {CipherService} from './cipher.service';
 import {CIPHER_OPTIONS, CipherOptions} from './interface';
@@ -29,7 +28,7 @@ export class CipherModule {
   static forRoot(options: CipherOptions): DynamicModule {
     return {
       module: CipherModule,
-      imports: [ConfigModule, TerminusModule, LoggerModule.forRoot()],
+      imports: [ConfigModule, TerminusModule],
       providers: [
         {provide: CIPHER_OPTIONS, useValue: options},
         ...CIPHER_PROVIDERS,
@@ -41,12 +40,7 @@ export class CipherModule {
   static forRootAsync(options: CipherOptionsAsync): DynamicModule {
     return {
       module: CipherModule,
-      imports: [
-        ConfigModule,
-        TerminusModule,
-        LoggerModule.forRoot(),
-        ...(options.imports ?? []),
-      ],
+      imports: [ConfigModule, TerminusModule, ...(options.imports ?? [])],
       providers: [
         CipherModule.buildOptionsProvider(options),
         ...CIPHER_PROVIDERS,
