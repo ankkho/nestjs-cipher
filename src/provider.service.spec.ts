@@ -1,8 +1,8 @@
-import {describe, expect, it} from 'vitest';
-import {ProvidersService} from './provider.service';
+import { describe, expect, it } from 'vitest';
+import { ProviderService } from './provider.service';
 
-describe('ProvidersService', () => {
+describe('ProviderService', () => {
   it('should be defined', () => {
-    expect(ProvidersService).toBeDefined();
+    expect(ProviderService).toBeDefined();
   });
 });

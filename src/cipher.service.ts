@@ -1,9 +1,9 @@
-import {createCipheriv, createDecipheriv, randomBytes} from 'node:crypto';
-import {Injectable} from '@nestjs/common';
-import {SpanStatusCode, trace} from '@opentelemetry/api';
-import {Context, EncryptedPayload} from './interface';
-import {ProvidersService} from './provider.service';
-import {buildKeyAlias} from './utils';
+import { Injectable } from '@nestjs/common';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { Context, EncryptedPayload } from './interface';
+import { ProviderService } from './provider.service';
+import { buildKeyAlias } from './utils';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -14,7 +14,7 @@ const tracer = trace.getTracer('nestjs-cipher');
 
 @Injectable()
 export class CipherService {
-  constructor(private readonly providersService: ProvidersService) {}
+  constructor(private readonly ProviderService: ProviderService) { }
 
   /**
    * Encrypt data using envelope encryption (AES-256-GCM + KMS-wrapped DEK)
@@ -29,7 +29,7 @@ export class CipherService {
   ): Promise<EncryptedPayload> {
     const span = tracer.startSpan('nestjs-cipher.encrypt', {
       attributes: {
-        'cipher.provider': this.providersService.getProviderType(),
+        'cipher.provider': this.ProviderService.getProviderType(),
         'cipher.context.type': context.tenantId ? 'tenant' : 'user',
       },
     });
@@ -42,7 +42,7 @@ export class CipherService {
       const iv = randomBytes(IV_LENGTH);
 
       // Get KMS provider and wrap DEK
-      const provider = this.providersService.getProvider();
+      const provider = this.ProviderService.getProvider();
       const keyAlias = buildKeyAlias(context);
       const keyPath = provider.generateKeyPath(keyAlias);
 
@@ -59,7 +59,7 @@ export class CipherService {
       // Zero out DEK from memory
       dek.fill(0);
 
-      span.setStatus({code: SpanStatusCode.OK});
+      span.setStatus({ code: SpanStatusCode.OK });
 
       // Encode to base64 for JSON serialization
       return {
@@ -70,7 +70,7 @@ export class CipherService {
         tag: tag.toString('base64'),
       };
     } catch (error) {
-      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
+      span.setStatus({ code: SpanStatusCode.ERROR, message: String(error) });
       throw error;
     } finally {
       span.end();
@@ -87,7 +87,7 @@ export class CipherService {
   async decrypt(payload: EncryptedPayload, context: Context): Promise<string> {
     const span = tracer.startSpan('nestjs-cipher.decrypt', {
       attributes: {
-        'cipher.provider': this.providersService.getProviderType(),
+        'cipher.provider': this.ProviderService.getProviderType(),
         'cipher.context.type': context.tenantId ? 'tenant' : 'user',
         'cipher.payload.version': payload.v,
       },
@@ -108,10 +108,10 @@ export class CipherService {
         }
       }
 
-      span.setStatus({code: SpanStatusCode.OK});
+      span.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {
-      span.setStatus({code: SpanStatusCode.ERROR, message: String(error)});
+      span.setStatus({ code: SpanStatusCode.ERROR, message: String(error) });
       throw error;
     } finally {
       span.end();
@@ -132,7 +132,7 @@ export class CipherService {
     const tag = Buffer.from(payload.tag, 'base64');
 
     // Get KMS provider and unwrap DEK
-    const provider = this.providersService.getProvider();
+    const provider = this.ProviderService.getProvider();
     const keyAlias = buildKeyAlias(context);
     const keyPath = provider.generateKeyPath(keyAlias);
 

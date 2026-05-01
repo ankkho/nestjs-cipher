@@ -4,14 +4,14 @@ import {
   InternalServerErrorException,
   OnModuleInit,
 } from '@nestjs/common';
-import {PinoLogger} from 'nestjs-pino';
-import {CIPHER_OPTIONS, CipherOptions, Providers} from './interface';
-import {GcpKmsProvider} from './providers/gcp.kms';
-import {IKeyProvider} from './providers/interface';
-import {LocalProvider} from './providers/local';
+import { PinoLogger } from 'nestjs-pino';
+import { CIPHER_OPTIONS, CipherOptions, Providers } from './interface';
+import { GcpKmsProvider } from './providers/gcp.kms';
+import { IKeyProvider } from './providers/interface';
+import { LocalProvider } from './providers/local';
 
 /**
- * ProvidersService
+ * ProviderService
  *
  * This NestJS service abstracts cryptographic provider initialization and access.
  * Currently supports Google Cloud KMS (GCP_KMS) as a backend for encryption key management.
@@ -21,10 +21,10 @@ import {LocalProvider} from './providers/local';
  * - Throws InternalServerErrorException if the provider is not supported or initialization fails.
  *
  * Usage:
- *   Inject ProvidersService and call getProvider() to access the KMS provider.
+ *   Inject ProviderService and call getProvider() to access the KMS provider.
  */
 @Injectable()
-export class ProvidersService implements OnModuleInit {
+export class ProviderService implements OnModuleInit {
   private readonly provider!: Providers;
   private providerInstance!: IKeyProvider;
 
@@ -33,7 +33,7 @@ export class ProvidersService implements OnModuleInit {
     private readonly logger: PinoLogger,
   ) {
     if (this.logger) {
-      this.logger.setContext(ProvidersService.name);
+      this.logger.setContext(ProviderService.name);
     }
 
     this.provider = this.options.provider;
@@ -44,13 +44,13 @@ export class ProvidersService implements OnModuleInit {
       await this.initProvider();
       if (this.logger) {
         this.logger.info(
-          {provider: this.provider},
+          { provider: this.provider },
           'KMS Provider initialized successfully',
         );
       }
     } catch (error) {
       if (this.logger) {
-        this.logger.error({error}, 'Failed to initialize KMS Provider');
+        this.logger.error({ error }, 'Failed to initialize KMS Provider');
       }
 
       throw new InternalServerErrorException(
@@ -68,7 +68,7 @@ export class ProvidersService implements OnModuleInit {
 
       case Providers.GCP_KMS: {
         this.providerInstance = await GcpKmsProvider.create(
-          this.options as Extract<CipherOptions, {provider: Providers.GCP_KMS}>,
+          this.options as Extract<CipherOptions, { provider: Providers.GCP_KMS }>,
         );
         break;
       }
