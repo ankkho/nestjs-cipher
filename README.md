@@ -2,9 +2,7 @@
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue) ![NestJS](https://img.shields.io/badge/NestJS-11-red) ![Node.js](https://img.shields.io/badge/Node.js-20+-green) ![pnpm](https://img.shields.io/badge/pnpm-10.32+-F69D3D) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-> Production-grade NestJS encryption module for PII protection with multi-cloud KMS integration.
-> 
-> Encrypt sensitive data (emails, PII, tokens) at rest using industry-standard **AES-256-GCM**. Keys are managed via **Google Cloud KMS** (AWS KMS and Azure Key Vault coming soon), with optional local-only mode for development.
+> Production-grade NestJS encryption module. Encrypt sensitive data (emails, PII, tokens) with **AES-256-GCM** + **Google Cloud KMS** (AWS/Azure coming soon). Local mode for development.
 
 ## Table of Contents
 
@@ -20,6 +18,7 @@
 - [Testing with Example](#testing-with-example)
 - [Troubleshooting](#troubleshooting)
 - [Production Deployment](#production-deployment)
+- [Infrastructure (OpenTofu)](#infrastructure-opentofu)
 - [Development](#development)
 - [Resources](#resources)
 
@@ -43,7 +42,7 @@
 
 **LOCAL** — In-memory keys; no persistence. Dev and CI/CD only.
 
-**GCP_KMS** — Enterprise-grade key management with audit logging, auto-rotation, and multi-region support.
+**GCP_KMS** — Enterprise-grade key management with audit logging, auto-rotation, and multi-region support. Note: GCP Cloud KMS is a paid service.
 
 **Coming Soon:** AWS KMS, Azure Key Vault
 
@@ -59,51 +58,17 @@ pnpm install nestjs-cipher
 
 ## Quick Start
 
-### Register Module (GCP KMS — Production)
+### ⭐ ConfigService (Recommended)
+
+All environment variables via **NestJS ConfigService**:
 
 ```typescript
-import { CipherModule, Providers } from 'nestjs-cipher';
-
-@Module({
-  imports: [
-    CipherModule.forRoot({
-      provider: Providers.GCP_KMS,
-      gcp: {
-        projectId: process.env.GCP_KMS_PROJECT_ID!,
-        location: 'europe-west3', // e.g., us-central1
-        keyRing: process.env.GCP_KMS_KEY_RING!,
-      },
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-### Register Module (Local — Development)
-
-```typescript
-import { CipherModule, Providers } from 'nestjs-cipher';
-
-@Module({
-  imports: [
-    CipherModule.forRoot({
-      provider: Providers.LOCAL, // ⚠️ Dev/test only
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-### Async Configuration (ConfigService)
-
-Use `forRootAsync()` when loading credentials from `ConfigService`, Vault, or any async source:
-
-```typescript
-import { CipherModule, Providers } from 'nestjs-cipher';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CipherModule, Providers } from 'nestjs-cipher';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     CipherModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -121,23 +86,40 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 export class AppModule {}
 ```
 
+**Environment:** `.env`
+```bash
+GCP_KMS_PROJECT_ID=my-project
+GCP_KMS_LOCATION=us-central1
+GCP_KMS_KEY_RING=pii-ring
+```
+
+### LocalProvider (Development Only)
+
+```typescript
+import { CipherModule, Providers } from 'nestjs-cipher';
+
+@Module({
+  imports: [CipherModule.forRoot({ provider: Providers.LOCAL })],
+})
+export class AppModule {}
+```
+
+**⚠️ In-memory keys only.** Not for production.
+
 ### Use Service
 
 ```typescript
 import { CipherService } from 'nestjs-cipher';
-import type { EncryptedPayload } from 'nestjs-cipher';
 
 @Injectable()
 export class UserService {
   constructor(private cipher: CipherService) {}
 
-  // Encrypt PII
   async createUser(email: string, tenantId: string) {
     const encrypted = await this.cipher.encrypt(email, { tenantId });
     await db.users.create({ email_encrypted: encrypted });
   }
 
-  // Decrypt PII
   async getUser(userId: string) {
     const stored = await db.users.findOne(userId);
     const email = await this.cipher.decrypt(stored.email_encrypted, {
@@ -150,120 +132,78 @@ export class UserService {
 
 ## Configuration
 
-### GCP KMS (Example: Production Setup)
+### GCP KMS
 
-**Environment Variables:**
-```bash
-GCP_KMS_PROJECT_ID=my-project
-GCP_KMS_KEY_RING=pii-ring
-GCP_KMS_LOCATION=europe-west3  # Optional; defaults to europe-west3
-```
+**Credentials:** Uses [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials).
 
-**Authentication:**
-`nestjs-cipher` uses [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials). ADC searches for credentials in order:
-
-1. `GOOGLE_APPLICATION_CREDENTIALS` environment variable
-2. `~/.config/gcloud/application_default_credentials.json` (gcloud CLI)
-3. Runtime environment (Cloud Run, GKE, Compute Engine, App Engine)
-4. Workload Identity binding (GKE)
-
-**Local Development:**
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
-pnpm example
+# OR
+gcloud auth application-default login
 ```
 
-**Validation:** Module startup throws `InternalServerErrorException` if credentials are not found or lack `roles/cloudkms.cryptographer` permission.
+**Permissions:** Service account requires `roles/cloudkms.cryptographer`.
 
-### Local Setup (Development Only)
+### Local (Development)
 
-**No Configuration Required:**
-```typescript
-import { CipherModule, Providers } from 'nestjs-cipher';
-
-@Module({
-  imports: [
-    CipherModule.forRoot({
-      provider: Providers.LOCAL,
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-Local provider stores encryption keys in-memory only. Keys are lost on application restart. **Not suitable for production.**
+No setup required. Keys stored in-memory only.
 
 ## How It Works
 
 ```
 1. Generate random 32-byte DEK
-2. Encrypt plaintext with AES-256-GCM locally
-3. Wrap DEK with KMS (GCP Cloud KMS)
+2. Encrypt plaintext locally (AES-256-GCM)
+3. Wrap DEK with KMS
 4. Zero DEK from memory
 5. Return: { v, ciphertext, wrappedDek, iv, tag }
-
-Decrypt reverses: unwrap DEK → decrypt → zero DEK
 ```
 
-**Key Points:**
-- Each `tenantId`/`userId` gets its own KMS key
-- Same context must be used for encrypt & decrypt
-- DEK never touches disk; only wrapped DEK stored
-- **⚠️ At least one of `tenantId` or `userId` is required**
+**Requirements:**
+- At least one of `tenantId` or `userId` required
+- Same context for encrypt & decrypt
+- `wrappedDek` safe to store (encrypted by KMS)
+- DEK never persisted; zeroed after each operation
 
-**What Gets Stored:**
-The entire encrypted payload is persisted in your database column:
+**Payload:**
 ```json
 {
   "v": 1,
-  "ciphertext": "NjZAULM5O+AIqTpvwFSuQQ==",
-  "wrappedDek": "gJj45odWOqMLG/zne650kkH1a2PUBRgI5tB7SLZSLlY=",
-  "iv": "TnAtxKkN+i2wnh2cukdE9Q==",
-  "tag": "fqE4Z+mCW9D6oiWfNnxiJQ=="
+  "ciphertext": "...",
+  "wrappedDek": "...",
+  "iv": "...",
+  "tag": "..."
 }
 ```
 
-> **`wrappedDek` is safe to store.** It is encrypted by KMS and is useless without KMS access. It is not a plaintext secret. The actual DEK is never persisted — it exists only in memory during encrypt/decrypt and is zeroed immediately after.
-
-> **Payload versioning (`v`).** The `v` field enables future algorithm migrations. To migrate existing `v:1` records, read-decrypt with the old version and re-encrypt with the new one during a background migration job. Old key versions remain usable for decryption after KMS rotation.
+**Versioning:** Use `v` field for algorithm migrations. Decrypt old `v:1` → re-encrypt to `v:2` during background jobs.
 
 ## Multi-Tenant Architecture
 
-`nestjs-cipher` uses **envelope encryption** to achieve secure, cost-effective multi-tenant data isolation.
-
-### Tenant Isolation
-
-Each tenant maps to a distinct KMS key:
+Each tenant gets a distinct KMS key:
 
 ```
 tenantId: 'org-100' → .../cryptoKeys/tenant-org-100
 userId: 'usr-42'    → .../cryptoKeys/user-usr-42
 ```
 
-**Result:** Tenant A cannot decrypt Tenant B's data (different KMS keys).
+**Result:** Tenant A cannot decrypt Tenant B's data.
 
-### Envelope Encryption for Cost Savings
-
-Share a **single KMS key** per tenant; use envelope encryption to minimize KMS API calls.
-
-**How It Works:**
-1. Generate random DEK (Data Encryption Key)
-2. Encrypt data locally with AES-256-GCM
-3. Wrap DEK once with tenant's KMS key
-4. Store wrapped DEK + encrypted data
-
-**Benefits:** Single KMS call per operation (not per record) → cost-effective at scale.
+**Envelope Encryption Benefits:**
+- Generate random DEK per operation
+- Encrypt data locally (AES-256-GCM)
+- Wrap DEK once with KMS
+- Single KMS call per operation → cost-effective at scale
 
 ## Observability
 
-`nestjs-cipher` instruments encrypt/decrypt with [OpenTelemetry](https://opentelemetry.io/) spans. Traces are emitted automatically if an OTel SDK is configured; no additional setup needed in this module.
-
-**Spans:** `nestjs-cipher.encrypt`, `nestjs-cipher.decrypt`
+OpenTelemetry spans: `nestjs-cipher.encrypt`, `nestjs-cipher.decrypt`
 
 **Attributes:**
 - `cipher.provider` — KMS provider (e.g., `GCP_KMS`)
 - `cipher.context.type` — `tenant` or `user`
 - `cipher.payload.version` — Payload version
+
+**Setup:** Automatic if OTel SDK is configured.
 
 ## Security Best Practices
 
@@ -275,21 +215,21 @@ Share a **single KMS key** per tenant; use envelope encryption to minimize KMS A
 
 ## Testing with Example
 
-See [example](./example) for a complete working example with LocalProvider.
+### LocalProvider (Development)
 
-### Run the example
-
-First, build the example:
 ```bash
-pnpm build:example
+pnpm build:example && pnpm example
 ```
 
-Then run it:
+### GCP KMS with OpenTofu (Production)
+
+Full setup with infrastructure provisioning:
+
 ```bash
-pnpm example
+cd example/tofu-gcp && source .env.gcp && pnpm build && pnpm example:gcp
 ```
 
-The example demonstrates encryption/decryption with logging output.
+See [example/tofu-gcp/README.md](./example/tofu-gcp/README.md) for details.
 
 ## Troubleshooting
 
@@ -302,17 +242,21 @@ The example demonstrates encryption/decryption with logging output.
 
 ## Production Deployment
 
-**Essentials:**
 - Use `Providers.GCP_KMS` (not Local)
-- Store credentials in secure vault (GCP Secret Manager, HashiCorp Vault, etc.)
+- Store credentials in secure vault (GCP Secret Manager, Vault, etc.)
 - Grant service account `roles/cloudkms.cryptographer` only
-- Enable Cloud Audit Logs for access monitoring
-- Set up alerts for KMS API errors and quota usage
-
-**Fault Tolerance:**
-- Create KMS keys in multiple regions for failover
+- Enable Cloud Audit Logs for monitoring
+- Set up alerts for KMS API errors and quota
+- Create keys in multiple regions for failover
 - Rotate credentials immediately if compromised
-- Module startup validates credentials and fails fast on invalid configuration
+
+## Infrastructure (OpenTofu)
+
+> Environments: `dev`, `test`, `stage`, `prod`.
+
+GCP KMS infrastructure is provisioned with [OpenTofu](https://opentofu.org/).
+
+Provider: [`GCP KMS`](./infra/tofu/gcp/README.md).
 
 ## Development
 
@@ -349,10 +293,10 @@ See [.github/README.md](.github/README.md) for CI/CD and repository best practic
 
 ## Resources
 
-- **Documentation**: [.github/README.md](.github/README.md) - Repository best practices
-- **Example**: [example](./example) - Working sample with LocalProvider
-- **Security**: [.github/SECURITY.md](.github/SECURITY.md) - Security policy
-- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+- [Contributing](./CONTRIBUTING.md) — Contribution guidelines
+- [Security Policy](./.github/SECURITY.md) — Security & reporting
+- [Example](./example) — Working sample
+- [Infrastructure (OpenTofu)](./infra/tofu/gcp/README.md) — GCP KMS setup
 
 ## License
 

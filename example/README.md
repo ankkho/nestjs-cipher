@@ -48,26 +48,31 @@ This will compile and run the example, showing encrypted and decrypted output in
 
 ## Production Switch
 
-To use GCP KMS instead of LocalProvider, update `app.module.ts`:
+The `app.module.ts` uses `CipherModule.forRootAsync()` with `ConfigService` to load all configuration via environment variables. This ensures **no hardcoded secrets**.
 
-```typescript
-CipherModule.forRoot({
-  provider: Providers.GCP_KMS,
-  gcp: {
-    projectId: process.env.GCP_KMS_PROJECT_ID!,
-    location: process.env.GCP_KMS_LOCATION || 'us-central1',
-    keyRing: process.env.GCP_KMS_KEY_RING!,
-  },
-})
-```
+To use GCP KMS in production, set these environment variables:
 
-And set environment variables:
 ```bash
+# Required
+CIPHER_PROVIDER=GCP_KMS
 GCP_KMS_PROJECT_ID=my-project
 GCP_KMS_LOCATION=us-central1
 GCP_KMS_KEY_RING=pii-ring
 GCP_KMS_CREDENTIALS_PATH=/path/to/service-account-key.json
 ```
+
+Or for local development (default):
+
+```bash
+CIPHER_PROVIDER=LOCAL
+```
+
+**Why ConfigService?**
+- ✅ No hardcoded secrets in source code
+- ✅ Environment parity (dev/test/prod)
+- ✅ Vault and secret manager integration ready
+- ✅ Runtime configuration validation
+- ✅ DRY principle (config in one place)
 
 ## See Also
 
