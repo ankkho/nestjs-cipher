@@ -3,15 +3,45 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "changelog-sections": [
-    {"type": "feat", "section": "🚀 Features"},
-    {"type": "fix", "section": "🐛 Bug Fixes"},
-    {"type": "perf", "section": "⚡ Performance"},
-    {"type": "refactor", "section": "♻️ Refactoring"},
-    {"type": "security", "section": "🔒 Security"},
-    {"type": "deps", "section": "⚙️ Dependencies"},
-    {"type": "docs", "section": "📝 Documentation"},
-    {"type": "chore", "hidden": true},
-    {"type": "test", "hidden": true},
-    {"type": "ci", "hidden": true}
+    {
+      "type": "feat",
+      "section": "🚀 Features"
+    },
+    {
+      "type": "fix",
+      "section": "🐛 Bug Fixes"
+    },
+    {
+      "type": "perf",
+      "section": "⚡ Performance"
+    },
+    {
+      "type": "refactor",
+      "section": "♻️ Refactoring"
+    },
+    {
+      "type": "security",
+      "section": "🔒 Security"
+    },
+    {
+      "type": "deps",
+      "section": "⚙️ Dependencies"
+    },
+    {
+      "type": "docs",
+      "section": "📝 Documentation"
+    },
+    {
+      "type": "chore",
+      "hidden": true
+    },
+    {
+      "type": "test",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "hidden": true
+    }
   ]
 }
