@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@google-cloud/kms':
         specifier: ^5.4.0
-        version: 5.4.0
+        version: 5.5.0
       '@nestjs/cache-manager':
         specifier: ^3.1.2
         version: 3.1.2(@nestjs/common@11.1.19(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.19)(cache-manager@7.2.8)(keyv@5.6.0)(rxjs@7.8.2)
@@ -583,8 +583,8 @@ packages:
     resolution: {integrity: sha512-rZAP3aVgB9ds9KOeUSL+zZ21hPmo8dh6fnIFwRQj5EAZl9gzR7wxYbYXYysAM8CTqGmUGyp2S4kUdV17MnGuWQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@google-cloud/kms@5.4.0':
-    resolution: {integrity: sha512-+06zUCaJM+wyZISM3F6u/jSqoBs0iZ8Aj9rqOJFePoWkNN7FbR4mQpV7okGHA+Y7caVgq+4QtIDKiFd17SZT+A==}
+  '@google-cloud/kms@5.5.0':
+    resolution: {integrity: sha512-feaZLZ0G64gxejaemMUSliBkbzEicgXP+AFxt8DRUjRBTbP8qpHlZcGQxC+J+YF1pg0sTcV+WNy2syGW23irpA==}
     engines: {node: '>=18'}
 
   '@grpc/grpc-js@1.14.3':
@@ -4945,7 +4945,7 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@google-cloud/kms@5.4.0':
+  '@google-cloud/kms@5.5.0':
     dependencies:
       google-gax: 5.0.6
     transitivePeerDependencies:
