@@ -290,15 +290,13 @@ pnpm lint:fix
 pnpm typecheck
 ```
 
-See [.github/README.md](.github/README.md) for CI/CD and repository best practices.
-
 ## Resources
 
-- [Contributing](./CONTRIBUTING.md) — Contribution guidelines
-- [Release Process](./RELEASE_README.md) — Automated release workflow
-- [Security Policy](./.github/SECURITY.md) — Security & reporting
-- [Example](./example) — Working sample
-- [Infrastructure (OpenTofu)](./infra/tofu/gcp/README.md) — GCP KMS setup
+- [Contributing](https://github.com/ankkho/nestjs-cipher/blob/main/CONTRIBUTING.md) — Contribution guidelines
+- [Release Process](https://github.com/ankkho/nestjs-cipher/blob/main/RELEASE_README.md) — Automated release workflow
+- [Security Policy](https://github.com/ankkho/nestjs-cipher/blob/main/.github/SECURITY.md) — Security & reporting
+- [Example](https://github.com/ankkho/nestjs-cipher/tree/main/example) — Working sample
+- [Infrastructure (OpenTofu)](https://github.com/ankkho/nestjs-cipher/blob/main/infra/tofu/gcp/README.md) — GCP KMS setup
 
 ## License
 

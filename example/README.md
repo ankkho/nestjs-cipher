@@ -10,15 +10,23 @@ Simple demonstration of encryption/decryption using the nestjs-cipher package wi
 
 ## Quick Start
 
-### 1. Run the Example
+### 1. Copy env file
 
 ```bash
-pnpm example:dev
+cp .env.example .env
 ```
 
 This will compile and run the example, showing encrypted and decrypted output in the logs.
 
-### 2. Expected Output
+### 2. Run the Example
+
+```bash
+pnpm example
+```
+
+This will compile and run the example, showing encrypted and decrypted output in the logs.
+
+### 3. Expected Output
 
 ```
 [Example] 🔐 Starting encryption/decryption example...

@@ -1,7 +1,7 @@
-import {Logger} from '@nestjs/common';
-import {NestFactory} from '@nestjs/core';
-import {AppModule} from './app.module';
-import {PiiService} from './pii.service';
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { PiiService } from './pii.service';
 
 /**
  * Simple example demonstrating encryption/decryption with LocalProvider
