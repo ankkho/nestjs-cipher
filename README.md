@@ -1,6 +1,6 @@
 # nestjs-cipher
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue) ![NestJS](https://img.shields.io/badge/NestJS-11-red) ![Node.js](https://img.shields.io/badge/Node.js-20+-green) ![pnpm](https://img.shields.io/badge/pnpm-10.32+-F69D3D) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue) ![NestJS](https://img.shields.io/badge/NestJS-11-red) ![Node.js](https://img.shields.io/badge/Node.js-22+-green) ![pnpm](https://img.shields.io/badge/pnpm-11.0+-F69D3D) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 > Production-grade NestJS encryption module. Encrypt sensitive data (emails, PII, tokens) with **AES-256-GCM** + **Google Cloud KMS** (AWS/Azure coming soon). Local mode for development.
 
@@ -54,8 +54,8 @@ pnpm install @ankkho/nestjs-cipher
 ```
 
 **Requirements:**
-- Node.js 20.0.0 LTS or higher
-- pnpm 10.32.0+
+- Node.js 22.x.x higher
+- pnpm 11.0.0+
 
 ## Quick Start
 
@@ -230,7 +230,7 @@ Full setup with infrastructure provisioning:
 cd example/tofu-gcp && source .env.gcp && pnpm build && pnpm example:gcp
 ```
 
-See [example/tofu-gcp/README.md](./example/tofu-gcp/README.md) for details.
+See [example/tofu-gcp](./example/tofu-gcp/README.md) for details.
 
 ## Troubleshooting
 
