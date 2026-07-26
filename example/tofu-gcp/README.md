@@ -26,7 +26,7 @@ Retrieve environment variables from OpenTofu output:
 ```bash
 tofu output app_env_vars
 # Output:
-# GCP_KMS_PROJECT_ID = "my-project-123"
+# GCP_PROJECT_ID = "my-project-123"
 # GCP_KMS_KEY_RING = "nestjs-cipher-dev"
 # GCP_KMS_LOCATION = "global"
 ```
@@ -42,7 +42,7 @@ cp .env.gcp.example .env.gcp
 Update with values from OpenTofu output:
 
 ```bash
-export GCP_KMS_PROJECT_ID=my-project-123
+export GCP_PROJECT_ID=my-project-123
 export GCP_KMS_KEY_RING=nestjs-cipher-dev
 export GCP_KMS_LOCATION=global
 ```
@@ -66,7 +66,7 @@ pnpm example:gcp
 
 | Variable | Required | Description |
 |---|---|---|
-| `GCP_KMS_PROJECT_ID` | ✅ | GCP project ID |
+| `GCP_PROJECT_ID` | ✅ | GCP project ID |
 | `GCP_KMS_KEY_RING` | ✅ | KMS key ring name (from OpenTofu) |
 | `GCP_KMS_LOCATION` | ✅ | KMS location (`global` or region like `us-central1`) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Optional | Path to service account JSON key |

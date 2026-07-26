@@ -15,7 +15,7 @@ async function bootstrap() {
   // ConfigService validates required env vars during app initialization
   // If any are missing, forRootAsync().useFactory will throw during module init
   try {
-    const projectId = config.getOrThrow('GCP_KMS_PROJECT_ID');
+    const projectId = config.getOrThrow('GCP_PROJECT_ID');
     const keyRing = config.getOrThrow('GCP_KMS_KEY_RING');
     const location = config.getOrThrow('GCP_KMS_LOCATION');
     logger.log(`✓ Using GCP KMS: ${projectId} / ${keyRing} / ${location}`);

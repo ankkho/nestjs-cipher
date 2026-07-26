@@ -18,7 +18,7 @@ import { GcpKmsService } from './gcp-kms.service';
       useFactory: (config: ConfigService) => ({
         provider: Providers.GCP_KMS,
         gcp: {
-          projectId: config.getOrThrow('GCP_KMS_PROJECT_ID'),
+          projectId: config.getOrThrow('GCP_PROJECT_ID'),
           keyRing: config.getOrThrow('GCP_KMS_KEY_RING'),
           location: config.getOrThrow('GCP_KMS_LOCATION'),
         },

@@ -15,12 +15,19 @@ output "crypto_key_ids" {
   description = "Crypto key resource IDs per tenant"
 }
 
+output "key_ring_iam" {
+  value = {
+    for sa, member in google_kms_key_ring_iam_member.key_admin : sa => member.role
+  }
+  description = "IAM roles granted on the key ring"
+}
+
 # Ready-to-use env vars for nestjs-cipher configuration
 output "app_env_vars" {
   value = {
-    GCP_KMS_PROJECT_ID = var.project_id
-    GCP_KMS_KEY_RING   = google_kms_key_ring.pii.name
-    GCP_KMS_LOCATION   = var.location
+    GCP_PROJECT_ID  = var.project_id
+    GCP_KMS_KEY_RING = google_kms_key_ring.pii.name
+    GCP_KMS_LOCATION = var.location
   }
   description = "Environment variables to configure nestjs-cipher GCP_KMS provider"
 }

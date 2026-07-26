@@ -63,7 +63,7 @@ To use GCP KMS in production, set these environment variables:
 ```bash
 # Required
 CIPHER_PROVIDER=GCP_KMS
-GCP_KMS_PROJECT_ID=my-project
+GCP_PROJECT_ID=my-project
 GCP_KMS_LOCATION=us-central1
 GCP_KMS_KEY_RING=pii-ring
 GCP_KMS_CREDENTIALS_PATH=/path/to/service-account-key.json
