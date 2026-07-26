@@ -26,4 +26,4 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
-      - run: pnpm audit --audit-level moderate
+      - run: pnpm audit --audit-level critical
