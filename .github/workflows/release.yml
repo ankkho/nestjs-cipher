@@ -9,14 +9,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Creates/updates a Release PR with bumped version and CHANGELOG on every push to main.
-  # When the Release PR is merged, creates a GitHub release and git tag.
   release-please:
     runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -25,24 +19,3 @@ jobs:
           release-type: node
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-
-  # Publishes to npm only after a GitHub release is created (Release PR merged).
-  publish:
-    runs-on: ubuntu-latest
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.9.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          cache: pnpm
-          registry-url: https://registry.npmjs.org
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
