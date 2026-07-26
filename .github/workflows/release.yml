@@ -38,7 +38,7 @@ jobs:
           version: 11.9.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: 24.x
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - uses: actions/cache@v4
