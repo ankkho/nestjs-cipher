@@ -18,11 +18,5 @@ jobs:
         with:
           node-version: 24.x
           cache: pnpm
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - run: pnpm install 
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
