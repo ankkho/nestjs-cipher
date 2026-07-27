@@ -317,7 +317,7 @@ Setup is automatic if OTel SDK is configured in your NestJS app.
 
 - Each tenant/user gets a distinct KMS key
 - DEKs are generated per-operation and zeroed from memory after use
-- Unwrapped DEKs are cached for 5 minutes (configurable) then discarded
+- Unwrapped DEKs are cached for 5 minutes then discarded
 - The library never persists plaintext keys
 
 ### Key Lifecycle
