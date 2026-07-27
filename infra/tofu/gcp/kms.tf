@@ -1,7 +1,7 @@
 # ─── nestjs-cipher KMS ────────────────────────────────────────────────────────
 # Copy this file into your Tofu module. It provisions:
 #   - KMS key ring
-#   - One crypto key per tenant (pre-provisioned)
+#   - One crypto key per tenant (each key covers all tenant resources: org, users, etc.)
 #   - Project-level IAM for runtime key creation (optional)
 #   - Key ring-level IAM for encrypt/decrypt (optional)
 #
@@ -15,7 +15,7 @@
 
 variable "tenant_names" {
   type        = list(string)
-  description = "Tenant IDs to pre-provision keys for. One key per entry. Single-tenant apps use [\"default\"]."
+  description = "Tenant IDs to pre-provision keys for. One key per tenant covers all its resources (org, users, etc.). Single-tenant apps use [\"default\"]."
   default     = ["default"]
 }
 
@@ -50,7 +50,8 @@ resource "google_kms_key_ring" "pii" {
 }
 
 # ─── Crypto Keys ──────────────────────────────────────────────────────────────
-# One key per tenant. The library also auto-creates keys at runtime
+# One key per tenant. Each key protects all of the tenant's resources
+# (org data, user records, etc.). The library also auto-creates keys at runtime
 # for any tenant not listed here (requires kms_service_account_emails).
 
 resource "google_kms_crypto_key" "tenant" {
@@ -73,6 +74,7 @@ resource "google_kms_crypto_key" "tenant" {
 
 # ─── IAM: Project-level KMS Admin (for runtime key creation) ──────────────────
 # Required because the library creates per-tenant crypto keys dynamically.
+# Each tenant key covers all of that tenant's resources.
 # KeyRing IAM only supports: viewer, cryptoKeyEncrypterDecrypter, signerVerifier.
 # roles/cloudkms.cryptoKeyAdmin is NOT a valid KeyRing IAM role.
 # roles/cloudkms.admin at the project level grants cryptoKeys.create.
@@ -88,7 +90,8 @@ resource "google_project_iam_member" "kms_admin" {
 
 # ─── IAM: Key Ring Encrypter/Decrypter ────────────────────────────────────────
 # Grants useToEncrypt/useToDecrypt on ALL crypto keys in the ring — including
-# dynamically created per-tenant keys (tenant-<uuid>).
+# dynamically created per-tenant keys. Each tenant key covers all of that
+# tenant's resources (org, users, etc.).
 # roles/cloudkms.cryptoKeyEncrypterDecrypter at the key ring level covers:
 #   - cloudkms.cryptoKeyVersions.useToEncrypt
 #   - cloudkms.cryptoKeyVersions.useToDecrypt

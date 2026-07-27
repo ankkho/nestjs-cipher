@@ -1,6 +1,6 @@
 # GCP KMS — OpenTofu
 
-Provisions the Google Cloud KMS infrastructure used by `nestjs-cipher` for PII encryption.
+Provisions the Google Cloud KMS infrastructure used by `nestjs-cipher` for PII encryption. Each tenant gets a single KMS key that protects all of its resources (org, users, etc.).
 
 ## Quick Start
 
@@ -19,29 +19,29 @@ tofu plan
 
 ## What Gets Created
 
-| Resource | Purpose |
-|----------|---------|
-| `google_kms_key_ring.pii` | Container for all tenant keys |
-| `google_kms_crypto_key.tenant` | One key per tenant (default: `["default"]`) |
-| `google_project_iam_member.kms_admin` | Project-level IAM for runtime key creation (default: no-op) |
-| `google_kms_key_ring_iam_member.encrypter_decrypter` | Key ring-level IAM for encrypt/decrypt (default: no-op) |
+| Resource                                             | Purpose                                                              |
+| ---------------------------------------------------- | -------------------------------------------------------------------- |
+| `google_kms_key_ring.pii`                            | Container for all tenant keys                                        |
+| `google_kms_crypto_key.tenant`                       | One key per tenant — covers all tenant resources (default: `["default"]`) |
+| `google_project_iam_member.kms_admin`                | Project-level IAM for runtime key creation (default: no-op)          |
+| `google_kms_key_ring_iam_member.encrypter_decrypter` | Key ring-level IAM for encrypt/decrypt (default: no-op)              |
 
 ## Variables (all optional)
 
 All variables have defaults. Override only what you need.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `tenant_names` | `["default"]` | Tenant IDs to pre-provision. Single-tenant apps keep the default. |
-| `kms_service_account_emails` | `[]` | Service account emails for KMS admin + encrypter/decrypter roles. Required for runtime key creation. |
-| `kms_key_rotation_period` | `"7776000s"` (90d) | Automatic rotation period. |
-| `kms_protection_level` | `"SOFTWARE"` | `SOFTWARE` ($0.06/key/mo) or `HSM` ($1.00/key/mo). |
+| Variable                     | Default            | Description                                                                                          |
+| ---------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------- |
+| `tenant_names`               | `["default"]`      | Tenant IDs to pre-provision. One key per tenant covers all its resources. Single-tenant apps keep the default. |
+| `kms_service_account_emails` | `[]`               | Service account emails for KMS admin + encrypter/decrypter roles. Required for runtime key creation. |
+| `kms_key_rotation_period`    | `"7776000s"` (90d) | Automatic rotation period.                                                                           |
+| `kms_protection_level`       | `"SOFTWARE"`       | `SOFTWARE` ($0.06/key/mo) or `HSM` ($1.00/key/mo).                                                   |
 
 ## Single-Tenant vs Multi-Tenant
 
 ### Single-tenant (default)
 
-No configuration needed. The library uses a single `tenant-default` key.
+No configuration needed. The library uses a single `default` key for all resources.
 
 ```hcl
 # No overrides — defaults work
@@ -49,7 +49,7 @@ No configuration needed. The library uses a single `tenant-default` key.
 
 ### Multi-tenant
 
-Pre-provision known tenants. New tenants are auto-created at runtime.
+Pre-provision known tenants. Each tenant gets one key that protects all its resources (org, users, etc.). New tenants are auto-created at runtime.
 
 ```hcl
 # In your .tfvars
@@ -67,10 +67,10 @@ kms_service_account_emails = ["cipher@my-project.iam.gserviceaccount.com"]
 
 This grants two roles:
 
-| Role | Scope | Permission |
-|------|-------|------------|
-| `roles/cloudkms.admin` | Project | `cloudkms.cryptoKeys.create` (runtime key creation) |
-| `roles/cloudkms.cryptoKeyEncrypterDecrypter` | Key Ring | `useToEncrypt` / `useToDecrypt` (all keys in ring) |
+| Role                                         | Scope    | Permission                                          |
+| -------------------------------------------- | -------- | --------------------------------------------------- |
+| `roles/cloudkms.admin`                       | Project  | `cloudkms.cryptoKeys.create` (runtime key creation) |
+| `roles/cloudkms.cryptoKeyEncrypterDecrypter` | Key Ring | `useToEncrypt` / `useToDecrypt` (all keys in ring)  |
 
 Without these, auto-creation fails with `PERMISSION_DENIED`.
 
@@ -85,9 +85,9 @@ tofu output crypto_key_ids # Map of tenant → key resource ID
 ## Cost
 
 | Protection | Key / Month |
-|------------|-------------|
-| SOFTWARE | ~$0.06 |
-| HSM | ~$1.00 |
+| ---------- | ----------- |
+| SOFTWARE   | ~$0.06      |
+| HSM        | ~$1.00      |
 
 Key versions created during rotation are billed until destroyed.
 
