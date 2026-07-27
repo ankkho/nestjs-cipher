@@ -119,17 +119,16 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 gcloud auth application-default login
 ```
 
-**IAM:** Service account needs `roles/cloudkms.cryptoKeyAdmin` on the key ring. This role allows the library to create keys automatically for new tenants.
+**IAM:** The service account needs two roles for the library to create keys automatically:
 
-If you prefer to pre-provision all keys via Tofu/gcloud and restrict the service account to encryption-only, use `roles/cloudkms.cryptographer` instead. New tenant keys will not be created automatically.
+| Role | Scope | Grants |
+|------|-------|--------|
+| `roles/cloudkms.admin` | Project | `cloudkms.cryptoKeys.create` — create keys for new tenants |
+| `roles/cloudkms.cryptoKeyEncrypterDecrypter` | Key Ring | `useToEncrypt` / `useToDecrypt` — encrypt/decrypt with all keys |
 
-### Environment Variables
+> **Note:** `roles/cloudkms.cryptoKeyAdmin` is a crypto key-level role and **cannot** be applied to key rings. Use `roles/cloudkms.admin` at the project level instead.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GCP_PROJECT_ID` | — | GCP project ID |
-| `GCP_KMS_KEY_RING` | — | KMS key ring name |
-| `GCP_KMS_LOCATION` | — | Key ring location |
+If you pre-provision all keys via Tofu/gcloud and don't need auto-creation, only `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key ring is required.
 
 ## Architecture
 
@@ -251,7 +250,7 @@ tofu apply
 
 ### SaaS: Runtime Key Creation
 
-For apps where tenants are created at runtime, grant `cryptoKeyAdmin` so the library can create keys:
+For apps where tenants are created at runtime, grant both IAM roles so the library can create keys and encrypt/decrypt:
 
 ```hcl
 # In your .tfvars
@@ -260,10 +259,10 @@ kms_service_account_emails = ["cipher@my-project.iam.gserviceaccount.com"]
 
 ### IAM Roles
 
-| Role | When to Use |
-|------|-------------|
-| `roles/cloudkms.cryptoKeyAdmin` | Library creates keys automatically (SaaS, dynamic tenants) |
-| `roles/cloudkms.cryptographer` | All keys pre-provisioned via Tofu/gcloud (fixed tenants) |
+| Role | Scope | When to Use |
+|------|-------|-------------|
+| `roles/cloudkms.admin` | Project | Library creates keys automatically (SaaS, dynamic tenants) |
+| `roles/cloudkms.cryptoKeyEncrypterDecrypter` | Key Ring | Encrypt/decrypt with all keys in the ring (required for all deployments) |
 
 See [`infra/tofu/gcp/README.md`](./infra/tofu/gcp/README.md) for full Tofu documentation.
 
@@ -288,7 +287,7 @@ Setup is automatic if OTel SDK is configured in your NestJS app.
 ### Best Practices
 
 1. Store credentials in a secure vault (GCP Secret Manager, HashiCorp Vault). Never commit keys.
-2. Use `roles/cloudkms.cryptoKeyAdmin` only on the key ring — not at project level.
+2. Grant `roles/cloudkms.admin` at the project level (not key ring) for runtime key creation. Grant `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key ring for encrypt/decrypt.
 3. Enable automatic key rotation (90 days recommended, configured by default).
 4. Monitor Cloud Audit Logs for unauthorized KMS access.
 5. Use TLS for all network communication.
@@ -315,7 +314,8 @@ Setup is automatic if OTel SDK is configured in your NestJS app.
 |-------|----------|
 | `Module fails at startup` | Verify ADC credentials are set and valid |
 | `Decryption fails` | Ensure same `tenantId`/`userId` used for encrypt and decrypt |
-| `PERMISSION_DENIED on key creation` | Grant `roles/cloudkms.cryptoKeyAdmin` on the key ring |
+| `PERMISSION_DENIED on key creation` | Grant `roles/cloudkms.admin` at project level (not key ring — `cryptoKeyAdmin` is invalid on key rings) |
+| `PERMISSION_DENIED on encrypt` | Grant `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key ring |
 | `NOT_FOUND` on encrypt | Key doesn't exist and auto-creation is disabled. Check IAM permissions. |
 | High latency | Check network to GCP. DEK caching reduces KMS calls (5 min TTL). |
 | `GOOGLE_APPLICATION_CREDENTIALS not set` | Set the env var or run `gcloud auth application-default login` |
