@@ -30,6 +30,5 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-      - run: pnpm publish --provenance --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: pnpm pack
+      - run: npm publish --provenance --access public *.tgz
