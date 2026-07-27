@@ -23,7 +23,8 @@ tofu plan
 |----------|---------|
 | `google_kms_key_ring.pii` | Container for all tenant keys |
 | `google_kms_crypto_key.tenant` | One key per tenant (default: `["default"]`) |
-| `google_kms_key_ring_iam_member.key_admin` | IAM for runtime key creation (default: no-op) |
+| `google_project_iam_member.kms_admin` | Project-level IAM for runtime key creation (default: no-op) |
+| `google_kms_key_ring_iam_member.encrypter_decrypter` | Key ring-level IAM for encrypt/decrypt (default: no-op) |
 
 ## Variables (all optional)
 
@@ -32,7 +33,7 @@ All variables have defaults. Override only what you need.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `tenant_names` | `["default"]` | Tenant IDs to pre-provision. Single-tenant apps keep the default. |
-| `kms_service_account_emails` | `[]` | Service account emails for `cryptoKeyAdmin`. Required for runtime key creation. |
+| `kms_service_account_emails` | `[]` | Service account emails for KMS admin + encrypter/decrypter roles. Required for runtime key creation. |
 | `kms_key_rotation_period` | `"7776000s"` (90d) | Automatic rotation period. |
 | `kms_protection_level` | `"SOFTWARE"` | `SOFTWARE` ($0.06/key/mo) or `HSM` ($1.00/key/mo). |
 
@@ -57,14 +58,21 @@ tenant_names = ["org-acme", "org-globex", "org-initech"]
 
 ### Runtime key creation (SaaS)
 
-For apps where tenants are created at runtime, grant `cryptoKeyAdmin` so the library can create keys on first encrypt:
+For apps where tenants are created at runtime, grant both roles so the library can create keys and encrypt/decrypt:
 
 ```hcl
 # In your .tfvars
 kms_service_account_emails = ["cipher@my-project.iam.gserviceaccount.com"]
 ```
 
-Without this, the service account only has `cryptographer` and auto-creation fails with PERMISSION_DENIED.
+This grants two roles:
+
+| Role | Scope | Permission |
+|------|-------|------------|
+| `roles/cloudkms.admin` | Project | `cloudkms.cryptoKeys.create` (runtime key creation) |
+| `roles/cloudkms.cryptoKeyEncrypterDecrypter` | Key Ring | `useToEncrypt` / `useToDecrypt` (all keys in ring) |
+
+Without these, auto-creation fails with `PERMISSION_DENIED`.
 
 ## Outputs
 
