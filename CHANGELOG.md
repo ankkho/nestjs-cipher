@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3](https://github.com/ankkho/nestjs-cipher/compare/v1.1.2...v1.1.3) (2026-07-27)
+
+
+### Bug Fixes
+
+* **deps:** use RELEASE_PLEASE_TOKEN for release creation ([c3b96c9](https://github.com/ankkho/nestjs-cipher/commit/c3b96c90b3e14c8b0116b84deec1aa52cc328d81))
+* updated publish.yml for trusted publisher ([#15](https://github.com/ankkho/nestjs-cipher/issues/15)) ([408c18c](https://github.com/ankkho/nestjs-cipher/commit/408c18cb38661d1378281b7634d0ea262f48b374))
+
 ## 1.0.0 (2026-07-26)
 
 
