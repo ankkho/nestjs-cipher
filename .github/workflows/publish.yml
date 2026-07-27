@@ -25,6 +25,7 @@ jobs:
           node-version: 24.x
           cache: pnpm
 
+      - run: echo "registry=https://registry.npmjs.org/" > .npmrc
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm build
