@@ -17,7 +17,7 @@ output "crypto_key_ids" {
 
 output "key_ring_iam" {
   value = {
-    for sa, member in google_kms_key_ring_iam_member.key_admin : sa => member.role
+    for sa, member in google_kms_key_ring_iam_member.encrypter_decrypter : sa => member.role
   }
   description = "IAM roles granted on the key ring"
 }

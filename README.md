@@ -8,30 +8,29 @@
 
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
-- [Architecture](#architecture)
 - [Multi-Tenant](#multi-tenant)
-- [Infrastructure](#infrastructure-opentofu)
+- [Infrastructure (OpenTofu)](#infrastructure-opentofu)
+- [Architecture](#architecture)
 - [Observability](#observability)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
-- [Resources](#resources)
 
 ## Quick Start
 
 ### 1. Install
 
 ```bash
-pnpm install @ankkho/nestjs-cipher
+pnpm add @ankkho/nestjs-cipher
 ```
 
-**Requirements:** Node.js ≥ 22, pnpm ≥ 11
+**Requirements:** Node.js ≥ 22, NestJS ≥ 10, pnpm ≥ 11
 
-### 2. Configure
+### 2. Register the Module
 
 ```typescript
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CipherModule, Providers } from '@ankkho/nestjs-cipher';
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { CipherModule, Providers } from "@ankkho/nestjs-cipher";
 
 @Module({
   imports: [
@@ -42,9 +41,9 @@ import { CipherModule, Providers } from '@ankkho/nestjs-cipher';
       useFactory: (config: ConfigService) => ({
         provider: Providers.GCP_KMS,
         gcp: {
-          projectId: config.getOrThrow('GCP_PROJECT_ID'),
-          keyRing: config.getOrThrow('GCP_KMS_KEY_RING'),
-          location: config.getOrThrow('GCP_KMS_LOCATION'),
+          projectId: config.getOrThrow("GCP_PROJECT_ID"),
+          keyRing: config.getOrThrow("GCP_KMS_KEY_RING"),
+          location: config.getOrThrow("GCP_KMS_LOCATION"),
         },
       }),
     }),
@@ -53,17 +52,10 @@ import { CipherModule, Providers } from '@ankkho/nestjs-cipher';
 export class AppModule {}
 ```
 
-```bash
-# .env
-GCP_PROJECT_ID=my-project
-GCP_KMS_LOCATION=us-central1
-GCP_KMS_KEY_RING=pii-ring
-```
-
-### 3. Use
+### 3. Encrypt and Decrypt
 
 ```typescript
-import { CipherService } from '@ankkho/nestjs-cipher';
+import { CipherService } from "@ankkho/nestjs-cipher";
 
 @Injectable()
 export class UserService {
@@ -72,6 +64,11 @@ export class UserService {
   async createUser(email: string, tenantId: string) {
     const encrypted = await this.cipher.encrypt(email, { tenantId });
     await db.users.create({ email_encrypted: encrypted });
+  }
+
+  async createOrg(name: string, tenantId: string) {
+    const encrypted = await this.cipher.encrypt(name, { tenantId });
+    await db.orgs.create({ name_encrypted: encrypted });
   }
 
   async getUser(userId: string, tenantId: string) {
@@ -84,52 +81,201 @@ export class UserService {
 }
 ```
 
-That's it. New tenant keys are created automatically on first encrypt — no manual provisioning needed.
+The same tenant key is used for all resources belonging to that tenant — org, users, settings, etc. New tenant keys are created automatically on first encrypt.
 
 ### Local Development
 
 ```typescript
-import { CipherModule, Providers } from '@ankkho/nestjs-cipher';
-
-@Module({
-  imports: [CipherModule.forRoot({ provider: Providers.LOCAL })],
-})
-export class AppModule {}
+CipherModule.forRoot({ provider: Providers.LOCAL });
 ```
 
-In-memory keys only. Not for production.
+In-memory keys. Not for production.
 
 ## Configuration
 
-### GCP KMS
+### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GCP_PROJECT_ID` | Yes | GCP project ID |
-| `GCP_KMS_KEY_RING` | Yes | KMS key ring name |
-| `GCP_KMS_LOCATION` | Yes | Key ring location (`us-central1`, `global`, etc.) |
+| Variable           | Required | Description                                       |
+| ------------------ | -------- | ------------------------------------------------- |
+| `GCP_PROJECT_ID`   | Yes      | GCP project ID                                    |
+| `GCP_KMS_KEY_RING` | Yes      | KMS key ring name                                 |
+| `GCP_KMS_LOCATION` | Yes      | Key ring location (e.g., `us-central1`, `global`) |
 
-**Credentials:** Uses [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials).
+### Credentials
+
+Uses [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials).
 
 ```bash
-# Option 1: Service account key
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+# Service account key
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
 
-# Option 2: gcloud (development only)
+# Or gcloud (development only)
 gcloud auth application-default login
 ```
 
-**IAM:** Service account needs `roles/cloudkms.cryptoKeyAdmin` on the key ring. This role allows the library to create keys automatically for new tenants.
+### IAM Roles
 
-If you prefer to pre-provision all keys via Tofu/gcloud and restrict the service account to encryption-only, use `roles/cloudkms.cryptographer` instead. New tenant keys will not be created automatically.
+The service account needs two roles:
 
-### Environment Variables
+| Role                                         | Scope    | Purpose                           |
+| -------------------------------------------- | -------- | --------------------------------- |
+| `roles/cloudkms.admin`                       | Project  | Create keys for new tenants       |
+| `roles/cloudkms.cryptoKeyEncrypterDecrypter` | Key Ring | Encrypt and decrypt with all keys |
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GCP_PROJECT_ID` | — | GCP project ID |
-| `GCP_KMS_KEY_RING` | — | KMS key ring name |
-| `GCP_KMS_LOCATION` | — | Key ring location |
+> **Important:** `roles/cloudkms.cryptoKeyAdmin` is a crypto key-level role and **cannot** be applied to key rings. Use `roles/cloudkms.admin` at the project level instead.
+
+If all keys are pre-provisioned via Tofu or gcloud, only `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key ring is required.
+
+## Multi-Tenant
+
+Each tenant gets a single KMS key. That key protects **all** of the tenant's resources — org data, user records, everything. Tenant A cannot decrypt Tenant B's data.
+
+### How It Works
+
+1. The app passes a `tenantId` on every encrypt/decrypt call
+2. The library maps it to a KMS key: `tenant-{tenantId}`
+3. That same key is used for all resources belonging to the tenant
+
+```typescript
+// All of these use the same tenant key
+await this.cipher.encrypt(org.name, { tenantId: "org-acme" });
+await this.cipher.encrypt(user.email, { tenantId: "org-acme" });
+await this.cipher.encrypt(settings.value, { tenantId: "org-acme" });
+```
+
+New tenant keys are created automatically on first encrypt — no manual provisioning needed.
+
+### Single-Tenant
+
+Use a consistent `tenantId` across all encrypt/decrypt calls:
+
+```typescript
+await this.cipher.encrypt(email, { tenantId: "default" });
+await this.cipher.decrypt(encrypted, { tenantId: "default" });
+```
+
+### Multi-Tenant (SaaS)
+
+Pass the tenant's ID from your auth context. Use it consistently across all resources:
+
+```typescript
+async createOrg(name: string, tenantId: string) {
+  const encrypted = await this.cipher.encrypt(name, { tenantId });
+  await this.db.orgs.create({ name_encrypted: encrypted, tenant_id: tenantId });
+}
+
+async createUser(email: string, tenantId: string) {
+  const encrypted = await this.cipher.encrypt(email, { tenantId });
+  await this.db.users.create({ email_encrypted: encrypted, tenant_id: tenantId });
+}
+
+async getOrg(orgId: string, tenantId: string) {
+  const stored = await this.db.orgs.findOne(orgId);
+  const name = await this.cipher.decrypt(stored.name_encrypted, { tenantId });
+  return { ...stored, name };
+}
+```
+
+### User-Level Isolation (Optional)
+
+For per-user key isolation (e.g., end-to-end encryption), pass `userId` instead of `tenantId`:
+
+```typescript
+await this.cipher.encrypt(message, { userId: user.id });
+```
+
+> **Note:** User-level keys are independent of tenant keys. Use this only when you need user-specific encryption (e.g., E2E messaging). For most multi-tenant apps, a single tenant key per tenant is sufficient.
+
+## Infrastructure (OpenTofu)
+
+The library includes a ready-to-use Tofu module for provisioning KMS keys. Copy the files into your existing infrastructure.
+
+### Files to Copy
+
+| File                                                       | Purpose                             |
+| ---------------------------------------------------------- | ----------------------------------- |
+| [`infra/tofu/gcp/kms.tf`](./infra/tofu/gcp/kms.tf)         | Key ring, crypto keys, IAM bindings |
+| [`infra/tofu/gcp/outputs.tf`](./infra/tofu/gcp/outputs.tf) | Outputs (key ring ID, app env vars) |
+
+### Prerequisites
+
+Your Tofu root module must define:
+
+```hcl
+variable "project_id" { type = string }
+variable "environment" { type = string }
+variable "location" { type = string }
+```
+
+### Setup
+
+**1. Copy the files:**
+
+```bash
+cp infra/tofu/gcp/kms.tf infra/tofu/gcp/outputs.tf your-tofu-module/
+```
+
+**2. Run:**
+
+```bash
+tofu init
+tofu plan
+tofu apply
+```
+
+### Configuration
+
+All variables have defaults. Override in your `.tfvars` as needed:
+
+| Variable                     | Default       | Description                    |
+| ---------------------------- | ------------- | ------------------------------ |
+| `tenant_names`               | `["default"]` | Tenant IDs to pre-provision    |
+| `kms_service_account_emails` | `[]`          | Service account emails for IAM |
+| `kms_key_rotation_period`    | `"7776000s"`  | Rotation period (90 days)      |
+| `kms_protection_level`       | `"SOFTWARE"`  | `SOFTWARE` or `HSM`            |
+
+**Single-tenant (no config needed):**
+
+```bash
+tofu apply  # Uses pii-ring key
+```
+
+**Multi-tenant (pre-provision known tenants):**
+
+```hcl
+# your.tfvars
+tenant_names = ["org-acme", "org-globex", "org-initech"]
+```
+
+Each entry creates one KMS key that protects all of that tenant's resources.
+
+**SaaS (runtime key creation):**
+
+```hcl
+# your.tfvars
+kms_service_account_emails = ["cipher@my-project.iam.gserviceaccount.com"]
+```
+
+This grants the two IAM roles needed for the library to create keys at runtime.
+
+### What Gets Created
+
+| Resource                                             | Purpose                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------- |
+| `google_kms_key_ring.pii`                            | Key ring container for all tenant keys                  |
+| `google_kms_crypto_key.tenant`                       | One key per tenant — covers all tenant resources        |
+| `google_project_iam_member.kms_admin`                | Project-level IAM for runtime key creation              |
+| `google_kms_key_ring_iam_member.encrypter_decrypter` | Key ring IAM for encrypt/decrypt                        |
+
+### Outputs
+
+```bash
+tofu output key_ring_name    # Key ring name (for GCP_KMS_KEY_RING)
+tofu output crypto_key_ids   # Map of tenant → key ID
+tofu output app_env_vars     # Ready-to-use env vars
+```
+
+Full documentation: [`infra/tofu/gcp/README.md`](./infra/tofu/gcp/README.md)
 
 ## Architecture
 
@@ -153,7 +299,7 @@ plaintext ──► AES-256-GCM (local) ──► ciphertext
 4. Zero the DEK from memory
 5. Return the encrypted payload
 
-**Why envelope encryption?** Local AES-256-GCM is fast (~1ms). KMS wrapping adds security without encrypting every field through the network. The DEK is never persisted — it's generated, used, and zeroed each operation.
+**Why envelope encryption?** Local AES-256-GCM is fast (~1ms). KMS wrapping adds security without encrypting every field through the network. The DEK is never persisted.
 
 ### Encrypted Payload
 
@@ -167,119 +313,29 @@ plaintext ──► AES-256-GCM (local) ──► ciphertext
 }
 ```
 
-| Field | Purpose |
-|-------|---------|
-| `v` | Payload version (for future algorithm migrations) |
-| `ciphertext` | AES-256-GCM encrypted data |
-| `wrappedDek` | DEK encrypted by KMS (safe to store) |
-| `iv` | Initialization vector |
-| `tag` | GCM authentication tag |
-
-**Requirements:**
-- At least one of `tenantId` or `userId` is required
-- Use the same context for encrypt and decrypt
-- Store the full payload — all fields are needed for decryption
+- **`tenantId`** is required (or `userId` for user-level isolation)
+- Use the **same context** for encrypt and decrypt
+- **Store the full payload** — all fields are needed for decryption
 
 ### Key Auto-Creation
 
-The library automatically creates KMS keys for new tenants on first encrypt. If `tenant-{tenantId}` doesn't exist, it's created with:
+Keys are created automatically on first encrypt with:
 
 - Purpose: `ENCRYPT_DECRYPT`
 - Algorithm: `GOOGLE_SYMMETRIC_ENCRYPTION`
 - Protection: `SOFTWARE`
 - Rotation: 90 days
 
-Existing keys are reused — no-op on subsequent calls.
-
-## Multi-Tenant
-
-Each tenant gets an isolated KMS key:
-
-```
-tenantId: "org-100"  → .../cryptoKeys/tenant-org-100
-tenantId: "org-200"  → .../cryptoKeys/tenant-org-200
-userId:   "usr-42"   → .../cryptoKeys/user-usr-42
-```
-
-Tenant A cannot decrypt Tenant B's data. Key isolation is enforced by KMS.
-
-### Single-Tenant
-
-Use a consistent `tenantId` (e.g., `"default"`) across all encrypt/decrypt calls:
-
-```typescript
-await this.cipher.encrypt(email, { tenantId: 'default' });
-await this.cipher.decrypt(encrypted, { tenantId: 'default' });
-```
-
-### Multi-Tenant (SaaS)
-
-Pass the tenant's ID from your auth context:
-
-```typescript
-await this.cipher.encrypt(email, { tenantId: tenant.id });
-await this.cipher.decrypt(encrypted, { tenantId: tenant.id });
-```
-
-Keys are created automatically on first encrypt. No infrastructure changes needed per tenant.
-
-### User-Level Isolation
-
-For per-user key isolation (e.g., end-to-end encryption):
-
-```typescript
-await this.cipher.encrypt(message, { userId: user.id });
-```
-
-## Infrastructure (OpenTofu)
-
-Pre-provision known tenants with Tofu. Unknown tenants are auto-created at runtime by the library.
-
-### Quick Setup
-
-Copy `kms.tf` into your existing Tofu module. It assumes your module already has `var.project_id`, `var.environment`, and `var.location`.
-
-```hcl
-# In your .tfvars
-tenant_names = ["org-acme", "org-globex"]  # optional, defaults to ["default"]
-```
-
-```bash
-tofu plan
-tofu apply
-```
-
-### SaaS: Runtime Key Creation
-
-For apps where tenants are created at runtime, grant `cryptoKeyAdmin` so the library can create keys:
-
-```hcl
-# In your .tfvars
-kms_service_account_emails = ["cipher@my-project.iam.gserviceaccount.com"]
-```
-
-### IAM Roles
-
-| Role | When to Use |
-|------|-------------|
-| `roles/cloudkms.cryptoKeyAdmin` | Library creates keys automatically (SaaS, dynamic tenants) |
-| `roles/cloudkms.cryptographer` | All keys pre-provisioned via Tofu/gcloud (fixed tenants) |
-
-See [`infra/tofu/gcp/README.md`](./infra/tofu/gcp/README.md) for full Tofu documentation.
+Existing keys are reused on subsequent calls.
 
 ## Observability
 
 OpenTelemetry spans are created automatically:
 
-| Span | Description |
-|------|-------------|
-| `nestjs-cipher.encrypt` | Encrypt operation |
-| `nestjs-cipher.decrypt` | Decrypt operation |
-
-**Attributes:**
-- `cipher.provider` — KMS provider (e.g., `GCP_KMS`)
-- `cipher.context.type` — `tenant` or `user`
-- `cipher.payload.version` — Payload version
+| Span                    | Attributes                                                         |
+| ----------------------- | ------------------------------------------------------------------ |
+| `nestjs-cipher.encrypt` | `cipher.provider`, `cipher.context.type`, `cipher.payload.version` |
+| `nestjs-cipher.decrypt` | `cipher.provider`, `cipher.context.type`, `cipher.payload.version` |
 
 Setup is automatic if OTel SDK is configured in your NestJS app.
 
@@ -288,37 +344,37 @@ Setup is automatic if OTel SDK is configured in your NestJS app.
 ### Best Practices
 
 1. Store credentials in a secure vault (GCP Secret Manager, HashiCorp Vault). Never commit keys.
-2. Use `roles/cloudkms.cryptoKeyAdmin` only on the key ring — not at project level.
-3. Enable automatic key rotation (90 days recommended, configured by default).
+2. Use least-privilege IAM: `roles/cloudkms.admin` at project level for creation, `roles/cloudkms.cryptoKeyEncrypterDecrypter` on key ring for operations.
+3. Enable automatic key rotation (90 days, configured by default).
 4. Monitor Cloud Audit Logs for unauthorized KMS access.
-5. Use TLS for all network communication.
+5. Use a consistent `tenantId` across all resources belonging to the same tenant.
 
 ### Data Isolation
 
-- Each tenant/user gets a distinct KMS key
+- Each tenant gets a single KMS key that protects all of its resources
+- Tenant A's key cannot decrypt Tenant B's data
 - DEKs are generated per-operation and zeroed from memory after use
-- Unwrapped DEKs are cached for 5 minutes (configurable) then discarded
+- Unwrapped DEKs are cached for 5 minutes then discarded
 - The library never persists plaintext keys
 
 ### Key Lifecycle
 
-| Stage | What Happens |
-|-------|-------------|
-| First encrypt for new tenant | KMS key created automatically |
-| Subsequent encrypts | Existing key reused |
-| Key rotation (90d) | New key version created, old versions remain for decryption |
-| Tenant deleted | KMS key soft-deleted (30-day recovery window) |
+| Stage                        | What Happens                                                         |
+| ---------------------------- | -------------------------------------------------------------------- |
+| First encrypt for new tenant | Tenant key created automatically (covers all tenant resources)       |
+| Subsequent encrypts          | Existing tenant key reused                                           |
+| Key rotation (90d)           | New key version created, old versions remain for decryption          |
+| Tenant deleted               | KMS key soft-deleted (30-day recovery window)                       |
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `Module fails at startup` | Verify ADC credentials are set and valid |
-| `Decryption fails` | Ensure same `tenantId`/`userId` used for encrypt and decrypt |
-| `PERMISSION_DENIED on key creation` | Grant `roles/cloudkms.cryptoKeyAdmin` on the key ring |
-| `NOT_FOUND` on encrypt | Key doesn't exist and auto-creation is disabled. Check IAM permissions. |
-| High latency | Check network to GCP. DEK caching reduces KMS calls (5 min TTL). |
-| `GOOGLE_APPLICATION_CREDENTIALS not set` | Set the env var or run `gcloud auth application-default login` |
+| Issue                                    | Solution                                                              |
+| ---------------------------------------- | --------------------------------------------------------------------- |
+| `Module fails at startup`                | Verify ADC credentials are set and valid                              |
+| `Decryption fails`                       | Ensure same `tenantId` used for encrypt and decrypt                   |
+| `PERMISSION_DENIED on key creation`      | Grant `roles/cloudkms.admin` at project level                         |
+| `PERMISSION_DENIED on encrypt`           | Grant `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key ring    |
+| `GOOGLE_APPLICATION_CREDENTIALS not set` | Set the env var or run `gcloud auth application-default login`        |
 
 ## Development
 
@@ -339,14 +395,6 @@ pnpm build:example && pnpm example
 # GCP KMS
 cd example/tofu-gcp && source .env.gcp && pnpm build && pnpm example:gcp
 ```
-
-## Resources
-
-- [Contributing](https://github.com/ankkho/nestjs-cipher/blob/main/CONTRIBUTING.md)
-- [Release Process](https://github.com/ankkho/nestjs-cipher/blob/main/RELEASE_README.md)
-- [Security Policy](https://github.com/ankkho/nestjs-cipher/blob/main/.github/SECURITY.md)
-- [Infrastructure (OpenTofu)](https://github.com/ankkho/nestjs-cipher/blob/main/infra/tofu/gcp/README.md)
-- [Example](https://github.com/ankkho/nestjs-cipher/tree/main/example)
 
 ## License
 
