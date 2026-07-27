@@ -1,6 +1,6 @@
 {
   "name": "@ankkho/nestjs-cipher",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Production-grade NestJS encryption module for PII protection with AES-256-GCM and KMS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
