@@ -77,7 +77,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
     "@commitlint/cli": "^21.2.1",
-    "@commitlint/config-conventional": "^20.5.3",
+    "@commitlint/config-conventional": "^21.2.0",
     "@nestjs/cli": "^11.0.24",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
